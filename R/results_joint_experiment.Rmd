@@ -120,7 +120,7 @@ df %>% group_by(custom_response) %>% mutate(n=n()) %>%
   theme(text = element_text(size=20),
         axis.text.x=element_text(angle=45, vjust = 0.5),
         legend.position="none") +
-  labs(y="#participants", x="custom response", title="(not creatable) custom responses") +
+  labs(x="#participants", y="custom response", title="(not creatable) custom responses") +
   theme_bw()
 ```
 
@@ -181,4 +181,15 @@ pids.color <- data.color %>% group_by(prolific_id, id) %>%
 df %>% filter(prolific_id %in% pids.color)
 
 ```
+
+# Participants' slider rating for u in task 1 is 0 but u is produced in task 2
+
+```{r}
+data.joint.orig %>%
+  filter(!is.na(human_exp2) & human_exp1 == 0)
+
+
+```
+
+
 

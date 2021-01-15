@@ -82,7 +82,7 @@ for(alpha in alphas){
       if(params$predictions_for == "empirical-tables") {
         res.behav_model = join_model_behavioral_data(speaker, params);
         sp = res.behav_model %>%
-          dplyr::select(prolific_id, id, utterance, model.p) %>%
+          dplyr::select(prolific_id, id, utterance, model.p, model.table) %>%
           rename(stimulus = id, probs=model.p)
         res.behav_model.avg = join_model_behavioral_avg_stimulus(
           sp, params, "_predictions-empirical-based")                                                       
@@ -107,9 +107,16 @@ for(alpha in alphas){
   }
 }
 
+if(params$predictions_for == "empirical-tables") {
+  fn = "-table_id_based.rds"  
+} else {
+  fn = "-stimulus-based.rds"
+}
+save_to = here("model", "results", paste("sweep-correlations-", used_tables, fn, sep=""))
 save_data(list(
   predictions_for = params$predictions_for,
+  which_tables = used_tables,
   indep_sigma = params$indep_sigma,
   tables = params$tables, 
   cor = correlations
-), here("model", "results", "sweep-correlations.rds"))
+), save_to)

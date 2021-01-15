@@ -24,11 +24,6 @@ N_trials = list(train=14+3+10, test=13*2+1, color_vision=6,
                 slider_choice=10, attention_check=3);
 data <- process_data(data_dir, data_fn, result_dir, result_fn, debug_run, N_trials)
 
-# create dir for filtered data if filtered later
-filtered_dir <- paste(result_dir, "filtered_data", sep=fs)
-if(!dir.exists(filtered_dir)){dir.create(filtered_dir, recursive=TRUE);
-}
-
 # Save data in different formats ------------------------------------------
 # Quality of data in slider ratings: squared distance to mean each table cell
 # entry (considering all participants) summed for each participant across all
@@ -109,52 +104,5 @@ params.fit = fitDirichlets(path_tables, target_dir=result_dir)
 tables.dirichlet = makeDirichletTables(params.fit, result_dir)
 res.goodness = compute_goodness_dirichlets(params.fit, result_dir, N_participants)
 p = plot_goodness_dirichlets(res.goodness, params.fit, result_dir)
-
-
-# functions ---------------------------------------------------------------
-filter_data = function(target_dir, exp.name, by_quality=FALSE,
-                       by_color_vision=FALSE, out.by_comments=NA){
-  # load smoothed tables
-  tables = readRDS(paste(target_dir, "empiric-all-tables-smooth.rds", sep=fs))
-  data = readRDS(paste(target_dir, fs, exp.name, "_tidy.rds", sep=""))
-  stimuli = data$test$id %>% unique()
-  df = tibble()
-  if(by_quality) {
-    exp1.quality = readRDS(paste(paste(target_dir, "filtered_data", sep=fs),
-                           "test-data-prior-quality.rds", sep=fs))
-    dat.quality = exp1.quality %>%
-      # mutate(quantiles=list(quantile(sum_sq_diff))) %>%
-      mutate(iqr=IQR(sum_sq_diff), mean=mean(sum_sq_diff),
-             outlier=sum_sq_diff < (mean-2*iqr) | (sum_sq_diff>mean + 2*iqr)) %>%
-      filter(!outlier) %>% dplyr::select(prolific_id, stimulus_id)
-    
-    df = bind_rows(df, right_join(tables, dat.quality %>% rename(id=stimulus_id)))
-  }
-  
-  if(by_color_vision){
-    dat.color = data$color %>%
-      mutate(correct = expected == response,  N=max(trial_number)) %>%
-      filter(correct) %>% group_by(prolific_id) %>%
-      mutate(n=n()) %>% filter(n == N) %>% dplyr::select(prolific_id) %>% unique() %>%
-      add_column(id=list(stimuli)) %>%
-      unnest(c(id))
-
-    message(paste("#participants excluded as at least 1 wrong color question:",
-            length(data$color$prolific_id %>% unique())-length(dat.color$prolific_id %>% unique)))
-    df=right_join(df, dat.color)
-  }
-  
-  if(!is.na(out.by_comments)){
-    df = anti_join(df, out.by_comments)
-  }
-  save_to = paste(target_dir, "filtered_data",
-                  "empiric-filtered-tables-smooth.rds", sep=fs)
-  saveRDS(df, save_to)
-  print(paste("saved filtered smooth tables to:", save_to))
-  message(paste("remaining tables:", nrow(df), "(", nrow(df)/nrow(tables), ")"))
-  return(df)
-}
-
-# df.filtered=filter_data(result_dir, result_fn, by_quality=TRUE, by_color_vision=TRUE)
 
 

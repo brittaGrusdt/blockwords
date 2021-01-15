@@ -439,6 +439,9 @@ join_model_behavioral_avg_stimulus = function(speaker, params, fn_suffix) {
     add_column(predictor="model") %>%
     mutate(stimulus = as.factor(stimulus))
   
+  tbls.avg = speaker %>% group_by(stimulus, utterance) %>% 
+    summarize(mean.table=mean(model.table), .groups="keep")
+  
   behav.joint = readRDS(paste(params$dir_empiric,"human-exp1-smoothed-exp2.rds",
                               sep=.Platform$file.sep)) %>%
     group_by(id, utterance) %>%
@@ -448,11 +451,12 @@ join_model_behavioral_avg_stimulus = function(speaker, params, fn_suffix) {
     rename(stimulus=id) %>% add_column(predictor="behavioral")
   
   joint.avg = bind_rows(behav.joint, sp) %>% group_by(stimulus, predictor)
+  joint = left_join(joint.avg, tbls.avg, by=c("stimulus", "utterance"))
   fn =  paste("model-behavioral-avg-stimuli", fn_suffix, ".rds", sep="")
   if(params$save) {
-    save_data(joint.avg, paste(params$target_dir, fn, sep=.Platform$file.sep))
+    save_data(joint, paste(params$target_dir, fn, sep=.Platform$file.sep))
   }
-  return(joint.avg)
+  return(joint)
 }
 
 

@@ -68,7 +68,7 @@ if(params$level_max == "speaker") {
   if(params$predictions_for == "empirical-tables") {
     res.behav_model = join_model_behavioral_data(speaker, params);
     sp = res.behav_model %>%
-      dplyr::select(prolific_id, id, utterance, model.p) %>%
+      dplyr::select(prolific_id, id, utterance, model.p, model.table) %>%
       rename(stimulus = id, probs=model.p)
     res.behav_model.avg = join_model_behavioral_avg_stimulus(
       sp, params, "_predictions-empirical-based")                                                       

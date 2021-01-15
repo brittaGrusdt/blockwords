@@ -125,11 +125,12 @@ ggsave(paste(PLOT.dir, "quality-sum-sq-diff-to-mean.png", sep=fs), p, width=15, 
 
 # Model-vs-human ----------------------------------------------------------
 plotModelAndBehavioral = function(use_dirichlet_tables){
-  if(use_dirichlet_tables){fn_tables ="tables-dirichlet"
+  if(use_dirichlet_tables){
+    fn_tables ="tables-dirichlet"
   } else{fn_tables = "tables-model"
   }
   save_to = paste(PLOT.dir, "comparison-exp1-exp2-model", fn_tables, sep=fs)
-  if(!dir.exists(save_to)) {dir.create(save_to)}
+  if(!dir.exists(save_to)) {dir.create(save_to, recursive = TRUE)}
   mapping = readRDS(
     here("model", "data", paste("mapping-", fn_tables, "-ids.rds", sep=""))
   )
@@ -202,8 +203,8 @@ plotModelAndBehavioral = function(use_dirichlet_tables){
 }
 
 # model predictions with theoretic/dirichlet-fitted tables
-plotModelAndBehavioral(use_fitted_tables = FALSE)
-plotModelAndBehavioral(use_fitted_tables = TRUE)
+plotModelAndBehavioral(use_dirichlet_tables = FALSE)
+plotModelAndBehavioral(use_dirichlet_tables = TRUE)
 
 
 plotAveragePredictions = function(tables_fn, across_empirical){
@@ -245,11 +246,11 @@ plotAveragePredictions = function(tables_fn, across_empirical){
   p.scatter.stim = p.scatter + facet_wrap(~stimulus)
   ggsave(paste(target_dir, paste(fn, "scattered-stim.png", sep="_"), sep=fs),
          p.scatter.stim, height=14, width=20)
-
+  return(data.wide)
 }
-plotAveragePredictions("tables-dirichlet", TRUE)
-plotAveragePredictions("tables-dirichlet", FALSE)
-plotAveragePredictions("tables-model", TRUE)
+df = plotAveragePredictions("tables-dirichlet", across_empirical=TRUE)
+df = plotAveragePredictions("tables-dirichlet", across_empirical=FALSE)
+df = plotAveragePredictions("tables-model", across_empirical=TRUE)
 
 
 # Training Data -----------------------------------------------------------

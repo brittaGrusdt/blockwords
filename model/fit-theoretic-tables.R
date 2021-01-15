@@ -3,8 +3,7 @@ library(here)
 library(tidyverse)
 source("model/R/helper-functions.R")
 
-tables = readRDS(here("data", "prolific", "results", "toy-blocks-pilot-2",
-                      "tables-empiric-augmented.rds"))
+tables = readRDS(here("data", "prolific", "toy-blocks-pilot-2", "tables-empiric-augmented.rds"))
 tbls = tables %>% dplyr::select(row_id, empirical_id, bg, b, g, none) %>% 
   unite("id", "empirical_id", "row_id", sep="_") %>%
   group_by(id) %>% 
