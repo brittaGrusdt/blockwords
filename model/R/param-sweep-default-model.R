@@ -107,4 +107,9 @@ for(alpha in alphas){
   }
 }
 
-save_data(correlations, here("model", "results", "sweep-correlations.rds"))
+save_data(list(
+  predictions_for = params$predictions_for,
+  indep_sigma = params$indep_sigma,
+  tables = params$tables, 
+  cor = correlations
+), here("model", "results", "sweep-correlations.rds"))
