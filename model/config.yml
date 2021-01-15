@@ -1,0 +1,95 @@
+default:
+  dir_empiric: "./data/prolific/toy-blocks-pilot-2"
+  params_ll: "results-dirichlet-fits.csv"
+  generate_utterances: false
+  seed_tables: 202008
+  save: true
+  cost_conditional: 0
+  alpha: 3
+  theta: 0.8
+  verbose: true
+  cns: !expr c("A implies C", "C implies A", "A implies -C", "C implies -A", "A || C")
+  packages:  !expr c(here("model", "webppl-model", "node_modules", "conditionalsHelpers"),
+                     here("model", "webppl-model", "node_modules", "conditionalsDefault"))
+  model_path: !expr here("model", "webppl-model", "default-model", "default-model.wppl")
+  #seed_webppl: !expr as.numeric(Sys.time())
+  seed_webppl: 123467
+  vars: !expr c("A", "C")
+  bias: "none"
+
+# only add new variables, since if more than two config-ids are loaded
+# default value is taken again if it does not appear in a later loaded config-id,
+# although it had been overwritten in a previously loaded config-id
+tables_model:
+  tables_empiric: "./model/data/tables-model-empirical.rds"
+  tables_mapping: "./model/data/mapping-tables-model-ids.rds"
+  target_dir: "./model/results/tables-model"
+  utts_path: "./model/data/utterances-model-tables.rds"
+
+tables_dirichlet:
+  tables_empiric: "./model/data/tables-dirichlet-empirical.rds"
+  tables_mapping: "./model/data/mapping-tables-dirichlet-ids.rds"
+  target_dir: "./model/results/tables-dirichlet"
+  utts_path: "./model/data/utterances-dirichlet-tables.rds"
+
+## 2. Level configurations ##
+# @arg utt: - if set to "p_delta" or "p_rooij", respective value must be
+#           large (see in webppl file) for all states given to the speaker,
+#           - if set to "" no condition, just sampled from prior as usual
+speaker_empirical_tables:
+  level_max: "speaker"
+  utt: ""
+  target_fn: "results-speaker-empirical-tables.rds"
+  target_params: "params-speaker-empirical-tables.rds"
+  n_samples: 0 # bns sampled from prior
+  #bn_ids: !expr c(5)
+  predictions_for: "empirical-tables"
+
+speaker_prior_samples:
+  level_max: "speaker"
+  utt: ""
+  target_fn: "results-speaker-prior-samples-stimuli.rds"
+  target_params: "params-speaker-prior-samples-stimuli.rds"
+  n_samples: 0 # bns sampled from prior
+  #bn_ids: !expr c(5)
+  predictions_for: "prior-samples-stimuli"
+
+prior:
+  level_max: "prior"
+  utt: ""
+  target_fn: "results-prior.rds"
+  target_params: "params-prior.rds"
+
+
+priorN:
+  level_max: "priorN"
+  utt: ""
+  target_fn: "results-priorN.rds"
+  target_params: "params-priorN.rds"
+  n_samples: 10000
+
+ll:
+  level_max: "LL"
+  utt: "A > C"
+  target_fn: "results-LL.rds"
+  target_params: "params-LL-prior.rds"
+
+pl:
+  level_max: "PL"
+  utt: "A > C"
+  target_fn: "results-PL.rds"
+  target_params: "params-prior-LL-PL.rds"
+
+
+# to generate tables based on theoretic beta distributions
+model_tables:
+  n_ind_tables: 3000
+  n_dep_tables: 2000
+  indep_sigma: 0.005
+  tables_path: "./model/data/tables-model.rds"
+  tables_empiric: "./model/data/tables-model-empirical.rds"
+  target_dir: "./model/data"
+  target_params: "params-tables-model.rds"
+  target_mapping: "./model/data/mapping-tables-model-ids.rds"
+  n_best_cns: 3
+# there needs to be 1 blank final line!

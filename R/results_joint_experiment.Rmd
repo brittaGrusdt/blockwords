@@ -1,0 +1,184 @@
+---
+title: "results joint experiment Pilot"
+output:
+  html_document:
+    df_print: paged
+---
+
+Load data
+
+```{r, warning=FALSE, message=FALSE}
+library(here)
+library(ggforce)
+source(here("R", "analysis-utils.R"))
+```
+
+## Meta info about participants
+
+```{r, meta, echo=FALSE}
+df <- data$info %>% group_by(prolific_id) %>% distinct()
+p <- df %>%
+  ggplot(aes(x=factor(0), y=timeSpent)) + 
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(shape=16, width=0.2) +
+  geom_hline(aes(yintercept = mean(df$timeSpent) + sd(df$timeSpent),
+                 color="yellow")) +
+  geom_hline(aes(yintercept = mean(df$timeSpent) + 2 * sd(df$timeSpent),
+                 color="red")) +
+  theme(legend.position="none") +
+  labs(x = "", y="timeSpent in min.")
+p
+
+df %>% ungroup() %>%  group_by(prolific_id) %>%  summary()
+```
+
+## Reaction Times per stimulus
+
+```{r, reaction-times, echo=FALSE}
+df <- data.production %>% dplyr::select(prolific_id, id, RT) %>% group_by(id) %>%
+  distinct()
+
+dat.RT = df %>% group_by(id) %>% summarise(mu=mean(RT), sd=sd(RT), .groups="drop_last")
+df <- left_join(df, dat.RT, by="id")
+for(pa in seq(1,2)) {
+  p <- df %>%  
+    ggplot(aes(y=RT)) + geom_boxplot(outlier.shape = NA) +
+    geom_jitter(aes(x=0, color=prolific_id), width = 0.1, alpha = 0.5) +
+    geom_hline(aes(yintercept = mu), color="green", linetype="dashed") +
+    theme(legend.position="right", axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+    labs(x="", y="RT in ms", title="Reaction Times per stimulus") +
+    facet_wrap_paginate(~id, nrow=2, ncol=5, page=pa) +
+    scale_y_continuous(trans = log2_trans(),
+                       breaks = trans_breaks("log2", function(x) 2^x),
+                       labels = trans_format("log2", math_format(2^.x))) +
+    theme(legend.position="none")
+  print(p)
+}
+```
+
+# General comments
+
+```{r, echo=FALSE}
+df.comments = data.comments %>% filter(!is.na(comments) & comments!="")
+print(df.comments$comments)
+```
+
+
+# Color vision trials
+
+```{r, color-vision, echo=FALSE}
+df <- data.color %>% group_by(prolific_id, id) %>%
+  mutate(correct = expected == response)
+
+df %>%
+  ggplot(aes(x=id)) + geom_bar(position="dodge", aes(fill=correct)) +
+  theme(axis.text.x = element_text(angle=90, hjust=1), legend.position = "top")
+pids.false_colors = df %>% filter(correct == FALSE)  %>% pull(prolific_id) 
+```
+
+
+
+# Slider Choices Training 1
+Any trials that yield particularly many wrong responses?
+
+```{r, fig.width=13}
+df = data$train.slider_choice %>% group_by(question) %>% mutate(N=n()) %>% 
+  filter(response!=expected) %>%
+  mutate(question=str_remove(question, "The sliders represent the beliefs of a person who"),
+         question=as.factor(question), 
+         expected=as.factor(expected))
+df.summary = df %>% group_by(question, expected, N) %>% summarize(n=n(), .groups="drop_last") %>% 
+  mutate(ratio_wrong=n/N)
+
+df.summary %>% 
+  ggplot(aes(x=ratio_wrong, y=question)) + 
+    geom_bar(stat="identity") +
+    # geom_text(aes(x=0.6, y=question, label=expected), color='red') +
+  facet_wrap(~expected)
+
+```
+
+
+## Production Task
+Custom responses
+
+```{r, custom-responses, fig.height = 10, fig.width = 10}
+dat.custom = data.production %>% filter(!is.na(custom_response)) %>%
+  group_by(prolific_id, id) %>% mutate(custom_response = tolower(custom_response))
+total = data.production %>% dplyr::select(prolific_id, id) %>% distinct()
+print(paste('nb total custom responses given:', nrow(dat.custom), 'out of', nrow(total), 
+            '(', nrow(dat.custom)/nrow(total), ')'))
+df = dat.custom %>% rename(res.given=response, response=custom_response) %>%
+  standardize_sentences() %>%
+  mutate(newUtt = !response %in% standardized.sentences) %>%
+  filter(newUtt) %>% rename(custom_response=response)
+
+df %>% group_by(custom_response) %>% mutate(n=n()) %>% 
+  ggplot(aes(x=n, y=fct_rev(fct_infreq(custom_response)))) +
+  geom_bar(aes(fill=id), stat="identity", position=position_dodge()) +
+  geom_text(aes(label=res.given), position = position_nudge(x=-0.5, y=-0.25)) +
+  theme(text = element_text(size=20),
+        axis.text.x=element_text(angle=45, vjust = 0.5),
+        legend.position="none") +
+  labs(y="#participants", x="custom response", title="(not creatable) custom responses") +
+  theme_bw()
+```
+
+For each stimulus, which response was created how often?
+
+```{r, echo=FALSE, fig.height = 12}
+df.production.means = data.production %>%
+  dplyr::select(id, response, prolific_id) %>% 
+  group_by(id,response) %>% 
+  mutate(n=n()) %>% group_by(id) %>% mutate(N=n(), ratio=n/N) %>%
+  arrange(desc(ratio)) %>% 
+  add_column(predictor="empirical")
+
+df = df.production.means %>% dplyr::select(-prolific_id, -n, -N) %>% distinct() %>% 
+  mutate(response=as_factor(response)) %>% 
+  filter(ratio>0)
+
+df %>% 
+  ggplot(aes(y=response, x=ratio)) +
+  geom_bar(aes(fill=id), stat="identity") +
+  theme_bw(base_size=18) +
+  theme(legend.position = "none") +
+  facet_wrap(~id)
+```
+
+
+
+```{r}
+df.production.means = data.production %>% filter(id != "ind2") %>%
+  select(response, prolific_id, id) %>% 
+  group_by(prolific_id,response) %>% 
+  mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
+  arrange(desc(ratio)) %>% distinct() %>%
+  mutate(response=as.factor(response))
+
+# also note time spent
+df = left_join(df.production.means, data.info %>% select(prolific_id, timeSpent), 
+               by=c("prolific_id")) %>% 
+  mutate(timeSpent=round(timeSpent, 2))
+
+p  = df %>%
+  select(prolific_id, response, n, timeSpent) %>% distinct() %>% 
+  ggplot() +
+  geom_bar(aes(y=response, x=n), stat="identity") +
+  geom_text(aes(x=9, y="green might not fall", label=timeSpent), color="red") + 
+  theme_bw(base_size=18) +
+  facet_wrap(~prolific_id) + 
+  theme(legend.position = "none")
+  
+ggsave(paste(PLOT.dir, "utterance-frequencies.png", sep=SEP),
+       p, width=12, height=15)
+
+# color vision data
+pids.color <- data.color %>% group_by(prolific_id, id) %>%
+  filter(expected != response) %>%
+  pull(prolific_id)
+
+df %>% filter(prolific_id %in% pids.color)
+
+```
+

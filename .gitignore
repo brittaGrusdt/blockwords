@@ -1,0 +1,15 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+R/*.html
+*.html
+*.pdf
+model/R/figs/
+*.rds
+
+# do include index.html files
+!index.html
+!stimuli/index-stimuli.html
+
