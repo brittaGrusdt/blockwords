@@ -30,7 +30,8 @@ testTrials_if2 = function(priors){
 
   let dir = horiz[data.i_ramp]
   let w = dir == 'horizontal' ? PROPS.blocks.h : PROPS.blocks.w;
-  let pr = "default";
+  let p_fall = priors[data.i_ramp]
+  let pr = p_fall == "high" ? "default" : p_fall
   let ps = [data.i_ramp === 0 ? (w + DIST_EDGE[pr]) / w : PRIOR[dir][priors[0]],
             data.i_ramp === 1 ? (w + DIST_EDGE[pr]) / w : PRIOR[dir][priors[1]]];
   let b1 = blockOnBase(bases[0], data.b_sides[0]*ps[0], c1, 'blockA', horiz[0]=='horizontal');
@@ -76,7 +77,9 @@ testTrials_independent = function(priors){
   let b1 = blockOnBase(data.walls[0], data.sides[0] * PRIOR[horiz[0]][priors[0]],
     cols.test_blocks[colors[0]], "blockA", horiz[0] == 'horizontal')
   let w2 = horiz[1] == 'horizontal' ? PROPS.blocks.h : PROPS.blocks.w;
-  let b2 = blockOnBase(ramp.wall_bottom, data.sides[1],
+
+  let ps = (w2 + DIST_EDGE[priors[1]]) / w2;
+  let b2 = blockOnBase(ramp.wall_bottom, data.sides[1] * ps,
     cols.test_blocks[colors[1]], "blockC", horiz[1] == 'horizontal')
 
   // add seesaw as distractor

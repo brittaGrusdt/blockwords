@@ -28,14 +28,14 @@
       let cond, stimulus, id;
       if(MODE === "test") {
         let types = TRIAL_TYPES;
-        types = ['if1']
+        types = ['if2']
         // types = ['independent']
         cond = types[_.random(0, types.length-1)];
         let p1 = _.sample(['u', 'h', 'l']);
         let p2 = _.sample(['l', 'h', 'u']);
 
-        p1 = 'l'
-        p2 = 'h'
+        p1 = 'u'
+        p2 = 'l'
         id =  cond + '_' + p1 + p2;
         stimulus = TestStimuli[cond][id];
       } else if(MODE === "train") {
@@ -87,14 +87,11 @@
     }
     </script>
 
-    <!-- in debug mode: add expectations and data for shown stimulus -->
-    <button id="expectBttn" class="hide" onclick="expectedUtts()">expected utterances</button>
+    <!-- in debug mode: show data for shown stimulus -->
     <button id="exitBttn" class="hide" onclick="wrapperClearWorld()">clear</button>
     <button id="startBttn" class="hide" onclick="wrapperRunAnimation()">start</button>
-    <script src="expectations.js" type="text/javascript"></script>
     <script type="text/javascript">
       if(DEBUG){
-        $('#expectBttn').toggleClass('hide');
         $('#exitBttn').toggleClass('hide');
         $('#startBttn').toggleClass('hide');
 
@@ -103,17 +100,6 @@
         document.getElementById("data").innerHTML =
           'P(A): ' + stimulus.meta[priors[0]] + ' P(C): ' + stimulus.meta[priors[1]] +
           ', mode: ' + MODE;
-
-        let utterances = getExpectations(stimulus);
-        expectedUtts = function(){
-          for(var i=0; i < utterances.length; i++) {
-            var li = document.createElement("LI");
-            li.setAttribute('id', 'utt'+i);
-            var utt = document.createTextNode(utterances[i]);
-            li.appendChild(utt);
-            document.getElementById("utterances").appendChild(li);
-          }
-        }
       }
     </script>
     <script type="text/javascript">show(engine, render)</script>

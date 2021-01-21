@@ -1,4 +1,4 @@
-const DEBUG = true;
+const DEBUG = false;
 // var MODE = "color-vision"
 // var MODE = "train"
 // var MODE = "test"
@@ -64,7 +64,8 @@ let BASE_RAMP = {
 };
 
 // when uncertainty comes from balls, this dist is left towards the edge of platform
-let DIST_EDGE = {'default': 5, 'low': 50, 'no-dist': 0};
+let DIST_EDGE = {'no-dist': 0, 'default': 5,  'high': 5, 'low': 50,
+                 'uncertain': 25, 'uncertainH': 15, 'uncertainL': 30};
 let SIMULATION = {'duration': 5000};
 
 // fine-grained uncertain priors, e.g. u-Ll/u-Hl do not need extra entry, they
@@ -80,7 +81,7 @@ let HORIZ_AC2 = {
 let HORIZ_IND = {
   'll': ['vertical', 'horizontal'], 'ul': ['vertical', 'horizontal'],
   'uu': ['horizontal', 'vertical'], 'uh': ['horizontal', 'vertical'],
-  'hh': ['vertical', 'vertical'], 'hl': ['horizontal', 'vertical'],
+  'hh': ['vertical', 'vertical'], 'hl': ['horizontal', 'horizontal'],
   'lh': ['horizontal', 'vertical'], 'hu': ['horizontal', 'vertical'],
   'lu': ['vertical', 'horizontal']
 }
