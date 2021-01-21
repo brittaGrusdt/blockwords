@@ -125,7 +125,8 @@ Walls.train.steepness = [wall('w_bottom1', SCENE.w/2, 100),
 
 Walls.train.distance0 = [
   wall('w_top1', 150, 50),
-  wall('w_top2', 150, 220)
+  wall('w_top2', 150, 160),
+  wall('w_top2', 150, 280)
 ];
 
 Walls.train.distance1 = [

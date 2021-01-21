@@ -49,13 +49,14 @@ trials_independent = function(){
 trials_ramp = function(){
   let cs = BLOCK_COLS_SHORT.train;
   let colors = {distance0: [cols.train_blocks[1],
+                            cols.sienna,
                             cols.train_blocks[0]],
                 distance1: [cols.sienna].concat(cols.train_blocks),
                 balls: COLORS_BALL.train
                };
-  let priors = {distance0: ['xlow', 'high'],
+  let priors = {distance0: ['xlow', 'low', 'high'],
                 distance1: ['xlow', 'low', 'uncertainH']}
-  let dir = {distance0: ['horizontal', 'horizontal'],
+  let dir = {distance0: ['horizontal', 'horizontal', 'horizontal'],
              distance1: ['vertical', 'vertical', 'vertical']};
   let expected = {distance0: cs[0], distance1: cs[1]}
 
@@ -79,7 +80,8 @@ trials_ramp = function(){
       walls.push(base);
       let width = dir[id][idx] == 'horizontal' ? PROPS.blocks.h : PROPS.blocks.w
       let horiz = dir[id][idx] == 'horizontal';
-      let prop_on_base = (width + DIST_EDGE["default"]) / width;
+      let dist = (id=="distance0" && idx==1) ? "low" : "default";
+      let prop_on_base = (width + DIST_EDGE[dist]) / width;
       let block = blockOnBase(base, prop_on_base, colors[id][idx],
                               "block"+idx, horiz);
       objs_dyn.push(block);
