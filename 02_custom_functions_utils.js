@@ -89,15 +89,16 @@ _htmlSlider = function (idxSlider, utterance, options, value) {
     `<span class='magpie-response-slider-option optionWide thick'>` + options.left + `</span>
      <input type='range' id=` + responseID + ` name=` + answerID +
     ` class='magpie-response-slider slider-width' min='0' max='100' step='1' value='` + value +
+    `'>` +
     `<span class='magpie-response-slider-option optionWide thick'>` + options.right + `</span>
-    <output name="` + outputName + `" id=` + outputID + ` class="thick">` + value  + `</output>` +
+    <output name='` + outputName + `' id=` + outputID + ` class="thick">` + value  + `</output>` +
     end;
   return '<div class="qa-block">' + html_question + html_slider + '</div>'
 }
 
 htmlSliderAnswers = function (trial_data, values=["", "", "", ""]) {
   let utterances = [trial_data.icon1, trial_data.icon2,
-    trial_data.icon3, trial_data.icon4];
+                    trial_data.icon3, trial_data.icon4];
   let ids = trial_data.picture == '' ? ['ry', 'r', 'y', 'none'] : ['bg', 'b', 'g', 'none'];
   let html_str = `<div class='magpie-multi-slider-grid' id='answerSliders'>`;
   _.range(1, 5)

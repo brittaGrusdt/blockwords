@@ -66,7 +66,6 @@ const EVENT_MAP = {"rny": "the red block falls, but not the yellow",
                   "ynr": "the yellow block falls, but not the red",
                   "none": "none of the two blocks falls",
                   "both": "both blocks fall"}
-
 total_moves = VAL_START_SLIDERS === 0 ? 0 : 4;
 
 // custom functions:
@@ -222,18 +221,30 @@ _onChangeResponseFn = function(id, button2Toggle, col1, col2){
      $("#" + id).attr('iReplied', total_moves);
     let s = sumResponses()
     let ratings;
-    if(nbMoved()>=4){
+    if(nbMoved() >= 4){
       let sids = sliderIDS.filter(function(id){
         return($("#" + id).val() != 0)
       });
+      // if all set to 0 set all to 25 otherwise
+      // only sliders !=0 are updated (0 remains 0)
       if(sids.length == 0){
-        // if all set to 0 set all to 25
         ratings = _.map(_.range(1,5), function(idx){
           return({val: 25, id: "response" + (idx),
                   idxSlider: idx, category: idx2Event(idx-1)});
         });
       } else {
         ratings = _computeAdjustedCells(button2Toggle, sids, sids.length, 100)
+        // if last moved slider was set 0, its new value (0) must be shown correctly!
+        let values = _.map(sliderIDS, function(id){
+          return {"id": id, "i_time": parseInt($("#" + id).attr('iReplied')),
+                  "val": $("#" + id).val(),
+                  "idxSlider": _.last(id), "category": idx2Event(_.last(id)-1)
+                }
+        })
+        let last_slider = _.sortBy(values, 'i_time')[3]
+        if(last_slider.val == 0){
+          ratings.push(last_slider)
+        }
       }
       _setSliderVals(ratings, button2Toggle, true);
     } else {
@@ -253,11 +264,8 @@ _onChangeResponseFn = function(id, button2Toggle, col1, col2){
 _checkSliderResponse = function (id, button2Toggle, test) {
   let col1 = test ? "blue" : "red";
   let col2 = test ? "green" : "yellow";
-  $("#" + id).on("change", function(){
-      _onChangeResponseFn(id, button2Toggle, col1, col2);
-  });
   $("#" + id).on("click", function(){
-      _onChangeResponseFn(id, button2Toggle, col1, col2);
+    _onChangeResponseFn(id, button2Toggle, col1, col2);
   });
 }
 

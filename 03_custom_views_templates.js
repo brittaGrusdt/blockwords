@@ -81,10 +81,10 @@ const multi_slider_generator = {
       .append(answer_container_generator(config, CT));
     let button = $("#smallMarginNextButton");
     let ratings = _.map(_.range(4), function(idx){
-      if(VAL_START_SLIDERS != 0){
+      // if(VAL_START_SLIDERS != 0){
         // $('#response' + (idx+1)).addClass('replied');
         $('#response' + (idx+1)).attr('iReplied', idx+1);
-      }
+      // }
       return({val: VAL_START_SLIDERS, id: "response" + (idx+1),
               idxSlider: idx+1, category: idx2Event(idx)});
     });
@@ -555,14 +555,12 @@ const animation_view_sliders = {
     });
     let ratings = _.map(_.range(1,5), function(idx){
       if(VAL_START_SLIDERS != 0){
-        // $('#response' + idx).addClass('replied');
+        // iReplied gives order in which sliders were moved
         $('#response' + idx).attr('iReplied', idx);
       }
       return({val: VAL_START_SLIDERS, id: "response" + idx,
               idxSlider: idx, category: idx2Event(idx-1)});
     });
-    // console.log(ratings)
-
     addCheckSliderResponse($('#runButton'), false);
     DEBUG ? addKeyToMoveSliders($("#runButton")) : null;
 
