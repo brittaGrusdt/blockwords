@@ -93,9 +93,10 @@ wallsIf1 = function(side, horiz, prior){
 seesawIf2 = function(prior, dir, side_ramp, offset=PROPS.seesaw.d_to_walls){
   let y_low = 220;
   let y_high = 170;
+  let w_w2blocks = PROPS.seesaw.base2blocks.w;
   let data = side_ramp === "right" ?
-    {x0: 75, y0: y_low, w0: 0.45 * PROPS.walls.w, y1: y_high, w1: BASE_RAMP[dir][prior]} :
-    {x0: 300, y0: y_high, w0: BASE_RAMP[dir][prior], y1: y_low, w1: 0.45 * PROPS.walls.w};
+    {x0: 75, y0: y_low, w0: w_w2blocks, y1: y_high, w1: BASE_RAMP[dir][prior]} :
+    {x0: 300, y0: y_high, w0: BASE_RAMP[dir][prior], y1: y_low, w1: w_w2blocks};
   let base0 = wall('seesaw_base_left', data.x0, data.y0, data.w0);
   let pos = base0.bounds.max.x + PROPS.seesaw.plank.w/2 + offset;
   let objs = seesaw(pos);
@@ -114,8 +115,8 @@ Walls.test = {
 
 //// Elements for TRAINING TRIALS //////
 Walls.train.uncertain = [
-  wall('w_mid_left', 0.3 * SCENE.w, SCENE.h/2, 150),
-  wall('w_mid_right', 0.75 * SCENE.w, SCENE.h/2, 150)
+  wall('w_mid_left', 0.3 * SCENE.w, SCENE.h/2, PROPS.seesaw.base2blocks.w),
+  wall('w_mid_right', 0.75 * SCENE.w, SCENE.h/2, PROPS.seesaw.base2blocks.w)
 ];
 
 Walls.train.steepness = [wall('w_bottom1', SCENE.w/2, 100),
@@ -124,14 +125,12 @@ Walls.train.steepness = [wall('w_bottom1', SCENE.w/2, 100),
 
 Walls.train.distance0 = [
   wall('w_top1', 150, 50),
-  wall('w_top2', 150, 150),
-  wall('w_top3', 150, 260)
+  wall('w_top2', 150, 220)
 ];
 
 Walls.train.distance1 = [
   wall('w_top1', 150, 50),
-  wall('w_top2', 150, 160),
-  wall('w_top3', 150, 270)
+  wall('w_top2', 150, 220)
 ];
 
 Walls.train.independent = [
@@ -141,9 +140,15 @@ Walls.train.independent = [
 Walls.train.if1 = wallsIf1
 
 Walls.train.ssw = function(){
-  let objs = seesaw(SCENE.w/2 - 30, SCENE.h - PROPS.bottom.h,
-    props={'plank': {'w': 280, 'h': 10}});
-  let walls = [wall('wallTopLeft', 150, 155, 140),
-               wall('wall_seesaw_right', 600, 240, 175)].concat([objs.skeleton]);
+  let x = SCENE.w/2 - 30
+  let pw = 280
+  let objs = seesaw(x, SCENE.h - PROPS.bottom.h,
+    props={'plank': {'w': pw, 'h': 10}});
+
+  let bw = PROPS.seesaw.base2blocks.w
+  let walls = [
+    wall('wallTopLeft', 150, 155, 140),
+    wall('wall_seesaw_right', x+pw/2+PROPS.seesaw.d_to_walls+bw/2, 240, bw)
+  ].concat([objs.skeleton]);
   return {'walls': walls, 'dynamic': [objs.plank, objs.constraint]}
 }

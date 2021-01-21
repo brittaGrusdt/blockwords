@@ -48,16 +48,15 @@ trials_independent = function(){
 
 trials_ramp = function(){
   let cs = BLOCK_COLS_SHORT.train;
-  let colors = {distance0: [cols.sienna,
-                            cols.train_blocks[1],
+  let colors = {distance0: [cols.train_blocks[1],
                             cols.train_blocks[0]],
-                distance1: [cols.sienna].concat(cols.train_blocks),
-                balls: COLORS_BALL.train.slice(0,3)
+                distance1: cols.train_blocks,
+                balls: COLORS_BALL.train
                };
-  let priors = {distance0: ['low', 'uncertainL', 'uncertainH'],
-                distance1: ['low', 'uncertainL', 'uncertainH']}
-  let dir = {distance0: ['horizontal', 'horizontal', 'horizontal'],
-             distance1: ['vertical', 'vertical', 'vertical']};
+  let priors = {distance0: ['xlow', 'high'],
+                distance1: ['xlow', 'high']}
+  let dir = {distance0: ['horizontal', 'horizontal'],
+             distance1: ['vertical', 'vertical']};
   let expected = {distance0: cs[0], distance1: cs[1]}
 
   let data = {};
@@ -123,7 +122,7 @@ trials_uncertain = function(){
         cols.train_blocks[1], "block2", dir[id][1] == 'horizontal'));
       b2 = [];
     } else if (id == "uncertain2") {
-      xBlocks.push(blockOnBase(walls[0], PRIOR["horizontal"]["low"],
+      xBlocks.push(blockOnBase(walls[0], PRIOR["horizontal"]["lowL"],
         cols.sienna, "xBlock", true));
       xBlocks.push(blockOnBase(xBlocks[0], -PRIOR[dir[id][0]][priors[id][0]],
         cols.train_blocks[0], "block2", dir[id][0] == 'horizontal'));

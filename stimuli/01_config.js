@@ -15,7 +15,9 @@ PROPS = {'blocks': {'w':40, 'h': 80},
          'seesaw': {'d_to_walls': 5,
                     'stick': {'w': 20, 'h': 95},
                     'plank': {'w': 220, 'h': 10},
-                    'link': {'w': 5, 'h': 10}},
+                    'link': {'w': 5, 'h': 10},
+                    'base2blocks': {'w': 90, 'h': 20}
+                  },
          'if1_ssw': {'stick': {'w': 20, 'h': 25}, 'plank': {'w': 300, 'h': 10}},
          'if1_base_ssw': {w: 80, h: 12}
        };
@@ -36,7 +38,7 @@ let PRIOR = {
   'horizontal': {'high': 0.42, 'uncertainH': 0.5, 'uncertain': 0.51,
                  'uncertainL': 0.53, 'lowH': 0.6, 'low': 0.67, 'lowL': 0.70,
                 },
-  'impossible': 1,
+  'impossible': 1.25,
   'conditions': ['high', 'uncertain', 'low'],
   'conditions_if': ['uncertainH', 'uncertainL']
 }
@@ -57,9 +59,9 @@ let ANGLES = {
 let PRETEST_ANGLES = _.range(45);
 let BASE_RAMP = {
   'horizontal': {'high': 125, 'uncertainH': 130, 'uncertain': 165,
-                 'uncertainL': 200, 'low': 270},
+                 'uncertainL': 200, 'low': 270, 'xlow': 300},
   'vertical': {'high': 130, 'uncertainH': 220, 'uncertain': 255,
-               'uncertainL': 290, 'low': 320},
+               'uncertainL': 290, 'low': 320, 'xlow': 400},
   'default': 200
 };
 
