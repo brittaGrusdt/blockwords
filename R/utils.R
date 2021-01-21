@@ -476,11 +476,10 @@ makeModelTables = function(dir_empiric){
                    by=c("AC.round", "A-C.round", "-AC.round", "-A-C.round")) %>% 
     mutate(empirical = !is.na(empirical_id)) %>% arrange(augmented)
   
-  #checkRatio..
   tables.generated.all = formatGeneratedTables(tbls.joint) %>%
     mutate(stimulus=cn)
   
-  # for generated tables from that match only with augmented empirical tables
+  # for generated tables that match only with augmented empirical tables
   # check what the original table was and also add this one
   # tables.generated.all = add_orig_empirical_only_augmented(tables.generated.all)
   save_data(tables.generated.all, dat.model$params$target_mapping)

@@ -22,9 +22,6 @@ var BIAS = data["bias"][0]
 globalStore.bias = BIAS
 var UTT = data["utt"][0]
 
-// parameter for likelihood functions
-globalStore.indep_sigma = data["indep_sigma"][0]
-
 // output parameters
 var LEVEL_MAX = data["level_max"][0]
 var verbose = data["verbose"][0]

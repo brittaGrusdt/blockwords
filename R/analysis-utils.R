@@ -113,9 +113,7 @@ data.prior.orig = readRDS(paste(RESULT.dir, "human-exp1-orig.rds", sep=fs))
 data.joint.smooth = readRDS(paste(RESULT.dir, "human-exp1-smoothed-exp2.rds", sep=fs))
 data.joint.orig = readRDS(paste(RESULT.dir, "human-exp1-orig-exp2.rds", sep=fs))
 
-data.quality = readRDS(paste(RESULT.dir, fs, "filtered_data", fs,
-                             "test-data-prior-quality.rds", sep=""))
-data.distances = readRDS(paste(RESULT.dir, "distances-quality.rds", sep=fs))
+# data.distances = readRDS(paste(RESULT.dir, "distances-quality.rds", sep=fs))
 
 data.train.smooth = data$train.smooth
 data.train.orig = data$train.orig

@@ -114,6 +114,7 @@ plotSliderRatingsAndUtts(data.joint.smooth, fn)
 # todo here
 
 # Data Quality ------------------------------------------------------------
+data.quality = readRDS(paste(RESULT.dir, fs, "test-data-prior-quality.rds", sep=""))
 p = data.quality  %>%
   ggplot(aes(x=stimulus_id,  y=sum_sq_diff)) +
   geom_boxplot(aes(colour=stimulus_id), outlier.shape=NA) +
@@ -205,7 +206,6 @@ plotModelAndBehavioral = function(use_dirichlet_tables){
 # model predictions with theoretic/dirichlet-fitted tables
 plotModelAndBehavioral(use_dirichlet_tables = FALSE)
 plotModelAndBehavioral(use_dirichlet_tables = TRUE)
-
 
 plotAveragePredictions = function(tables_fn, across_empirical){
   if(across_empirical){

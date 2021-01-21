@@ -6,11 +6,11 @@ source(here("model", "R", "helper-functions.R"))
 source(here("R", "utils.R"))
 source(here("R", "utils-exp2.R"))
 
-used_tables = "tables_model"
-# used_tables = "tables-dirichlet"
+# used_tables = "tables_model"
+used_tables = "tables_dirichlet"
 
-params <- configure(c("speaker_empirical_tables", used_tables))
-# params <- configure(c("speaker_prior_samples", "tables-dirichlet"))
+# params <- configure(c("speaker_empirical_tables", used_tables))
+params <- configure(c("speaker_prior_samples", "tables_dirichlet"))
 # params <- configure(c("pl", used_tables))
 
 # Setup -------------------------------------------------------------------
@@ -22,7 +22,6 @@ tables <- readRDS(params$tables_empiric)
 print(paste("tables read from:", params$tables_empiric))
 params$tables = tables %>% ungroup %>%
   dplyr::select(table_id, ps, vs, stimulus, "ll", "cn")
-params$indep_sigma = tables$indep_sigma %>% unique
 
 if("predictions_for" %in% names(params)) {
   if(params$predictions_for == "empirical-tables") {
@@ -41,7 +40,8 @@ if("predictions_for" %in% names(params)) {
 
 ## Generate/Retrieve utterances
 generate_utts <- function(params){
-  utterances <- run_webppl(here("model", "model", "default-model", "utterances.wppl"), params)
+  utterances <- run_webppl(here("model", "webppl-model", "default-model",
+                                "utterances.wppl"), params)
   utts <- utterances %>% map(function(x){x %>% pull(value)}) %>% unlist()
   utts %>% save_data(params$utts_path)
   return(utts)

@@ -1,0 +1,78 @@
+var tables = data["tables"]
+
+var likelihood_dep = function(table, cn, params){
+  var vals =
+    cn == "A implies C" ? [table.pca, table.pcna, table.pa] :
+    cn == "A implies -C" ? [table.pnca, table.pncna, table.pa] :
+    cn == "C implies A" ? [table.pac, table.panc, table.pc] :
+                          [table.pnac, table.pnanc, table.pc]
+
+  return (Math.exp(Beta({a: params.a, b: params.b}).score(vals[0])) *
+          Math.exp(Beta({a: params.b, b: params.a}).score(vals[1])) *
+          Math.exp(Beta({a: params.marg_a, b: params.marg_b}).score(vals[2]))
+        )
+}
+
+var likelihood_ind = function(table, params){
+  return Math.exp(Gaussian({mu: params.mu, sigma:params.sigma}).score(table.diff)) *
+         Math.exp(Beta({a: params.pa_a, b: params.pa_b}).score(table.pa)) *
+         Math.exp(Beta({a: params.pc_a, b: params.pc_b}).score(table.pc))
+}
+var likelihood = function(table, cn, params) {
+  return cn == "A || C" ? likelihood_ind(table, params)
+                        : likelihood_dep(table, cn, params)
+}
+
+var cns = ["A || C", "A implies C", "A implies -C", "C implies A", "C implies -A"]
+var dataAnalysis = function() {
+  // priors over parameters
+  var priors = {
+    "A || C": {mu: 0, sigma: uniform({a:0, b:1}),
+               pa_a: uniform({a:0, b:10}), pa_b: uniform({a:0, b:10}),
+               pc_a: uniform({a:0, b:10}), pc_b: uniform({a:0, b:10})
+             },
+    "A implies C": {a: uniform({a:0, b:10}), b: uniform({a:0, b:10}),
+      marg_a: uniform({a:0, b:1}), marg_b: uniform({a:0, b:1})},
+    "A implies -C": {a: uniform({a:0, b:10}), b: uniform({a:0, b:10}),
+      marg_a: uniform({a:0, b:1}), marg_b: uniform({a:0, b:1})},
+    "C implies A": {a: uniform({a:0, b:10}), b: uniform({a:0, b:10}),
+      marg_a: uniform({a:0, b:1}), marg_b: uniform({a:0, b:1})},
+    "C implies -A": {a: uniform({a:0, b:10}), b: uniform({a:0, b:10}),
+      marg_a: uniform({a:0, b:1}), marg_b: uniform({a:0, b:1})}
+  }
+  var par_cns = dirichlet({"alpha": Vector([1, 1, 1, 1, 1])})
+  var prior_cns = {"A implies C": par_cns.data[0],
+                   "A implies -C": par_cns.data[1],
+                   "C implies A": par_cns.data[2],
+                   "C implies -A": par_cns.data[3],
+                   "A || C": par_cns.data[4]
+                 }
+
+  var logl = reduce(function(table, acc){
+    var lik_ti = map(function(cn){
+      return (prior_cns[cn] * likelihood(table, cn, priors[cn]))
+    }, cns)
+    return acc + Math.log(sum(lik_ti))
+  }, 0, tables)
+
+  factor(logl)
+
+  return {
+    "ind":  Object.assign(priors["A || C"], {"p_cn": prior_cns["A || C"]}),
+    "A implies C": Object.assign(priors["A implies C"], {"p_cn": prior_cns["A implies C"]}),
+    "A implies -C": Object.assign(priors["A implies -C"], {"p_cn": prior_cns["A implies -C"]}),
+    "C implies A": Object.assign(priors["C implies A"], {"p_cn": prior_cns["C implies A"]}),
+    "C implies -A": Object.assign(priors["C implies -A"], {"p_cn": prior_cns["C implies -A"]})
+  }
+}
+
+var numSamples = 10000
+var inferOpts = {
+  model: dataAnalysis,
+  method: "MCMC",
+  samples: numSamples,
+  burn: 1000
+};
+
+var posterior = Infer(inferOpts);
+posterior

@@ -32,7 +32,7 @@ test.prior = data$test %>% filter(str_detect(trial_name, "multiple_slider"))
 prior.quality = test.prior %>%  dplyr::select(-response, -custom_response) %>% 
   responsesSquaredDiff2Mean() %>%
   mutate(stimulus_id=factor(stimulus_id))
-save_data(prior.quality, paste(filtered_dir, "test-data-prior-quality.rds", sep=fs))
+save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs))
 
 formatPriorElicitationData = function(test.prior, smoothed=TRUE){
   df.prior_responses = test.prior %>%
@@ -93,16 +93,55 @@ df = exp1.human.smooth %>% rename(r_smooth=human_exp1) %>%
 distances = distancesResponses(df)
 save_data(distances, paste(result_dir, "distances-quality.rds", sep=fs))
 
-# generate tables that are provided to model
-# theoretic tables
+
+# generate theoretic model tables (as in paper) ---------------------------
 tables.model = makeModelTables(result_dir)
 
-# fit dirichlet distribution for each stimulus
+# fit single dirichlet distribution for each stimulus ---------------------
 path_tables <- paste(result_dir, fs, result_fn, "_tables_smooth.csv", sep="")
-params.fit = fitDirichlets(path_tables, target_dir=result_dir)
-# params.fit = read_csv(paste(result_dir, "results-dirichlet-fits.csv", sep=fs))
-tables.dirichlet = makeDirichletTables(params.fit, result_dir)
-res.goodness = compute_goodness_dirichlets(params.fit, result_dir, N_participants)
-p = plot_goodness_dirichlets(res.goodness, params.fit, result_dir)
+# params.fit = fitDirichlets(path_tables, target_dir=result_dir)
+# write_csv(params.fit, paste(target_dir, "dirichlet-fits-params.csv", sep=fs))
+params.fit = read_csv(paste(result_dir, "dirichlet-fits-params.csv", sep=fs))
+tables.dirichlet = sample_dirichlet(params.fit)
+
+df.params.fit = params.fit %>% add_column(p_cn=1, cn="cn1")
+formatted.dirichlet = format_and_save_fitted_tables(
+  tables.dirichlet, df.params.fit, result_dir, "dirichlet"
+)
+res.goodness = compute_goodness_dirichlets(df.params.fit, result_dir, N_participants)
+p = plot_goodness_dirichlets(res.goodness, df.params.fit, result_dir)
+
+
+# fit latent mixture distributions for each stimulus ----------------------
+path_tables <- paste(result_dir, fs, result_fn, "_tables_smooth.csv", sep="")
+# params.fit = fitLatentMixture(path_tables, target_dir=result_dir)
+cns = c("A implies C", "A implies -C", "C implies A", "C implies -A")
+params.dep =  map_dfr(cns, function(cn){
+  df = params.fit %>% dplyr::select(c(starts_with(cn), id)) %>% 
+    rename_at(.vars = vars(starts_with(cn)), 
+              .funs = funs(str_replace(., paste(cn, ".", sep=""), ""))) %>% 
+    add_column(cn=(!! cn))
+  return(df)
+})
+# independent params
+params.ind = params.fit %>% dplyr::select(c(starts_with("ind"), id)) %>%
+  rename_at(.vars = vars(starts_with("ind")), 
+            .funs = funs(str_replace(., "ind.", ""))) %>% 
+  add_column(cn="ind")
+params = list(ind=params.ind, dep=params.dep)
+write_csv(params$ind, paste(result_dir, "latent-mixture-fits-ind-params.csv", sep=fs))
+write_csv(params$dep, paste(result_dir, "latent-mixture-fits-dep-params.csv", sep=fs))
+
+
+params = list(ind=read_csv(paste(result_dir, "latent-mixture-fits-ind-params.csv", sep=fs)),
+              dep=read_csv(paste(result_dir, "latent-mixture-fits-dep-params.csv", sep=fs)))
+
+tables.latent_mixture = sample_latent_mixture(params)
+formatted.lm = format_and_save_fitted_tables(tables.latent_mixture, result_dir, "latent-mixture")
+# todo
+# res.goodness = compute_goodness_latent_mixture(params, result_dir, N_participants, 100)
+# p = plot_goodness_latent_mixture(res.goodness, params, result_dir)
+
+
 
 
