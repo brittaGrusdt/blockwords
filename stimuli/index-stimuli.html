@@ -40,14 +40,18 @@
         stimulus = TestStimuli[cond][id];
       } else if(MODE === "train") {
         let types = ["independent", "if1", "uncertain", "ramp", "if2"];
-        types = ["independent"];
-        types = ["uncertain"]
+        // types = ["independent"];
+        // types = ["uncertain"]
         // types = ["if1"]
         // types = ["if2"];
-        // types = ["ramp"];
+        types = ["ramp"];
         cond = types[_.random(0, types.length-1)];
         id = _.sample(_.keys(TrainStimuli.map_category[cond]));
-        id = 'uncertain2';
+        // id = 'uncertain3';
+        id = 'distance1'
+        // id = "ind2"
+        // id = "ssw1"
+        // id = "ac3"
         stimulus = TrainStimuli.map_category[cond][id];
       } else if (MODE == "color-vision"){
         let ColorVisionStimuli = [];
