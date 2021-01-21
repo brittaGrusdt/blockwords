@@ -50,13 +50,13 @@ trials_ramp = function(){
   let cs = BLOCK_COLS_SHORT.train;
   let colors = {distance0: [cols.train_blocks[1],
                             cols.train_blocks[0]],
-                distance1: cols.train_blocks,
+                distance1: [cols.sienna].concat(cols.train_blocks),
                 balls: COLORS_BALL.train
                };
   let priors = {distance0: ['xlow', 'high'],
-                distance1: ['xlow', 'high']}
+                distance1: ['xlow', 'low', 'uncertainH']}
   let dir = {distance0: ['horizontal', 'horizontal'],
-             distance1: ['vertical', 'vertical']};
+             distance1: ['vertical', 'vertical', 'vertical']};
   let expected = {distance0: cs[0], distance1: cs[1]}
 
   let data = {};

@@ -31,7 +31,9 @@ testTrials_if2 = function(priors){
   let dir = horiz[data.i_ramp]
   let w = dir == 'horizontal' ? PROPS.blocks.h : PROPS.blocks.w;
   let p_fall = priors[data.i_ramp]
-  let pr = p_fall == "high" ? "default" : p_fall
+  let pr = (p_fall == "high" ||
+            p_fall == "uncertain" ||
+            p_fall == "uncertainL") ? "default" : p_fall
   let ps = [data.i_ramp === 0 ? (w + DIST_EDGE[pr]) / w : PRIOR[dir][priors[0]],
             data.i_ramp === 1 ? (w + DIST_EDGE[pr]) / w : PRIOR[dir][priors[1]]];
   let b1 = blockOnBase(bases[0], data.b_sides[0]*ps[0], c1, 'blockA', horiz[0]=='horizontal');
@@ -100,10 +102,9 @@ makeTestStimuli = function(conditions, relations){
         (pb1[0] + "-" + pb1[pb1.length-1]) : pb1[0];
       let pb2 = priors[1][0]
       let id = rel + '_' + pb1 + pb2;
-      let blocks = rel === "if2" ?
-        testTrials_if2(priors) : rel === "if1" ?
-        testTrials_if1(priors) : rel === "independent" ?
-        testTrials_independent(priors) : null;
+      let blocks = rel === "if2" ? testTrials_if2(priors) :
+                   rel === "if1" ? testTrials_if1(priors) :
+                   rel === "independent" ? testTrials_independent(priors) : null;
       TestStimuli[rel][id] = {"objs": blocks, "meta": priors, "id": id};
     }
   });

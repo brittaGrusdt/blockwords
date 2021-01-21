@@ -130,7 +130,8 @@ Walls.train.distance0 = [
 
 Walls.train.distance1 = [
   wall('w_top1', 150, 50),
-  wall('w_top2', 150, 220)
+  wall('w_top2', 150, 160),
+  wall('w_top3', 150, 280)
 ];
 
 Walls.train.independent = [
