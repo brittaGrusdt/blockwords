@@ -37,14 +37,14 @@ $("document")
     ].concat(views_test).concat([post_test, thanks]),
       // Here, you can specify all information for the deployment
       deploy: {
-        experimentID: "50",
+        experimentID: "54",
         serverAppURL: "https://mcmpact.ikw.uni-osnabrueck.de/magpie/api/submit_experiment/",
         // Possible deployment methods are:
         // "debug" and "directLink"
         // As well as "MTurk", "MTurkSandbox" and "Prolific"
         deployMethod: "Prolific",
         contact_email: "britta.grusdt@uni-osnabrueck.de",
-        prolificURL: "https://app.prolific.co/submissions/complete?cc=5570B716"
+        prolificURL: "https://app.prolific.co/submissions/complete?cc=36C6918E"
       },
       // Here, you can specify how the progress bar should look like
       progress_bar: {
