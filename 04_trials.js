@@ -284,7 +284,7 @@ fridge_trials = _.map(fridge_trials, function (trial, i) {
 });
 
 let fridge_ex = Object.assign({}, fridge_trials[0])
-fridge_ex.picture = "stimuli/img/train/ind2_test_colors.jpg";
+fridge_ex.picture = "stimuli/img/train/ind2_test_colors.png";
 fridge_ex.id = id_slider
 fridge_ex.QUD = `TRY OUT EXAMPLE &mdash;` + fridge_trials[0].QUD;
 const TRAIN_FRIDGE_TRIALS = [fridge_ex];
@@ -300,7 +300,7 @@ let other_ids = [
 
 let part1 = `The sliders represent the beliefs of a person who <br/><b>` ;
 let questions1 = [
-  part1 + `is <b>completely uncertain</b> whether the blocks fall, that is the person has no tendency towards any of the four outcomes.`,
+  part1 + `is <b>completely uncertain</b> whether the blocks fall, that is the person has no tendency towards any of the four events.`,
   part1 + `thinks that either both blocks or none of the two blocks fall.`
 ]
 let other_questions = [

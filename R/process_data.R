@@ -10,7 +10,8 @@ source("R/Dirichlet-fits.R")
 # debug_run = TRUE  # vs. experimental (prolific) run
 debug_run = FALSE
 
-data_fn <- "results_50_toy-blocks-pilot-2_BG.csv"
+# data_fn <- "results_50_toy-blocks-pilot-2_BG.csv"
+data_fn <- "results_54_blockwords-main_BG.csv"
 result_fn = "toy-blocks-pilot-2"
 N_participants = 30
 
