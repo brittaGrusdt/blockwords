@@ -304,8 +304,8 @@ let questions1 = [
   part1 + `thinks that either both blocks or none of the two blocks fall.`
 ]
 let other_questions = [
-  [part1 + `thinks that either both or none of the two blocks fall <br/>with a slight tendency towards the outcome that both blocks fall.`,
-  part1 + `thinks that either both or none of the two blocks fall <br/>with a slight tendency towards the outcome that no block falls.`
+  [part1 + `thinks that either both or none of the two blocks fall <br/>with a slight tendency towards the event that both blocks fall.`,
+  part1 + `thinks that either both or none of the two blocks fall <br/>with a slight tendency towards the event that no block falls.`
   ],
   [part1 + `is pretty certain that the red block falls but not the yellow.`,
    part1 + `is pretty certain that the yellow block falls but not the red.`
