@@ -106,25 +106,33 @@ closeChart = function() {
   var modal = document.getElementById("chartModal");
   modal.style.display = "none";
 }
-drawChart = function(slider_ratings, color){
+
+fillChart = function(slider_ratings, color){
+  let chart = color == "blue" ? chart_blue : color == "green" ? chart_green :
+              color == "red" ? chart_red : chart_yellow;
+  let p_pos = 0;
+  let col = color=="blue" ? cols["royal"] : cols[color];
+  _.map(slider_ratings, function(obj){
+      if((color=="blue" || color=="red") && (obj.id=="response1" || obj.id=="response2")){
+        p_pos = p_pos + obj.val
+      }
+      if((color=="green" || color=="yellow") && (obj.id=="response1" || obj.id=="response3")){
+        p_pos = p_pos + obj.val
+      }
+  });
+  chart.data = [{val: p_pos, category: color + " falls"},
+                {val: 100-p_pos, category: color + " does not fall"}];
+}
+
+drawChart = function(slider_ratings,color){
   var chart = am4core.create(
     "chartdiv_" + color,
     am4charts.PieChart
   );
   chart.innerRadius = am4core.percent(40);
   var pieSeries = chart.series.push(new am4charts.PieSeries());
-  let p = 0;
+
   let col = color=="blue" ? cols["royal"] : cols[color];
-  _.map(slider_ratings, function(obj){
-      if((color=="blue" || color=="red") && (obj.id=="response1" || obj.id=="response2")){
-        p = p + obj.val
-      }
-      if((color=="green" || color=="yellow") && (obj.id=="response1" || obj.id=="response3")){
-        p = p + obj.val
-      }
-  });
-  chart.data = [{val: p, category: color + " falls"},
-                {val: 100-p, category: color + " does not fall"}];
   var colorSet = new am4core.ColorSet();
   colorSet.list = [col, "#E3DFDC"].map(function(color) {
     return new am4core.color(color);
@@ -134,6 +142,7 @@ drawChart = function(slider_ratings, color){
   pieSeries.dataFields.category = "category";
   pieSeries.labels.template.disabled = true;
   pieSeries.ticks.template.disabled = true;
+  return(chart)
 }
 
 _slidersAdjusted = function(){
@@ -237,7 +246,7 @@ _onChangeResponseFn = function(id, button2Toggle, col1, col2){
         // if last moved slider was set 0, its new value (0) must be shown correctly!
         let values = _.map(sliderIDS, function(id){
           return {"id": id, "i_time": parseInt($("#" + id).attr('iReplied')),
-                  "val": $("#" + id).val(),
+                  "val": parseInt($("#" + id).val()),
                   "idxSlider": _.last(id), "category": idx2Event(_.last(id)-1)
                 }
         })
@@ -247,6 +256,8 @@ _onChangeResponseFn = function(id, button2Toggle, col1, col2){
         }
       }
       _setSliderVals(ratings, button2Toggle, true);
+      fillChart(ratings, col1);
+      fillChart(ratings, col2);
     } else {
       // not yet moved all sliders, simply change slider + output values
       ratings = _.map(slider_ratings, function(val, idx){
@@ -255,8 +266,6 @@ _onChangeResponseFn = function(id, button2Toggle, col1, col2){
       });
       _setSliderVals(ratings, button2Toggle, false);
     }
-    drawChart(ratings, col1);
-    drawChart(ratings, col2);
     // toggleNextIfDone($("#runButton"), nbMoved()==4);
     // toggleNextIfDone($("#smallMarginNextButton"), nbMoved()==4);
 }

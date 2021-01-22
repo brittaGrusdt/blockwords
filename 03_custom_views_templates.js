@@ -88,8 +88,8 @@ const multi_slider_generator = {
       return({val: VAL_START_SLIDERS, id: "response" + (idx+1),
               idxSlider: idx+1, category: idx2Event(idx)});
     });
-    drawChart(ratings, "blue");
-    drawChart(ratings, "green");
+    chart_blue = drawChart(ratings, "blue");
+    chart_green = drawChart(ratings, "green");
     // function for debugging - if "y" is pressed, the slider will change
     if (DEBUG) {
       addKeyToMoveSliders(button);
@@ -567,7 +567,7 @@ const animation_view_sliders = {
     let anim = {animation, cleared, CT, started:false,  trial_name:'animation_slider'}
     functionalityRunBttn(anim, "sliders");
     functionalityBttnNextAnimation(getSliderResponse, magpie, anim);
-    drawChart(ratings, "red");
-    drawChart(ratings, "yellow");
+    chart_red = drawChart(ratings, "red");
+    chart_yellow = drawChart(ratings, "yellow");
   }
 };
