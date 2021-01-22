@@ -77,28 +77,6 @@ pids.false_colors = df %>% filter(correct == FALSE)  %>% pull(prolific_id)
 ```
 
 
-
-# Slider Choices Training 1
-Any trials that yield particularly many wrong responses?
-
-```{r, fig.width=13}
-df = data$train.slider_choice %>% group_by(question) %>% mutate(N=n()) %>% 
-  filter(response!=expected) %>%
-  mutate(question=str_remove(question, "The sliders represent the beliefs of a person who"),
-         question=as.factor(question), 
-         expected=as.factor(expected))
-df.summary = df %>% group_by(question, expected, N) %>% summarize(n=n(), .groups="drop_last") %>% 
-  mutate(ratio_wrong=n/N)
-
-df.summary %>% 
-  ggplot(aes(x=ratio_wrong, y=question)) + 
-    geom_bar(stat="identity") +
-    # geom_text(aes(x=0.6, y=question, label=expected), color='red') +
-  facet_wrap(~expected)
-
-```
-
-
 ## Production Task
 Custom responses
 

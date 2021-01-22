@@ -114,12 +114,8 @@ plotSliderRatingsAndUtts(data.joint.smooth, fn)
 # todo here
 
 # Data Quality ------------------------------------------------------------
-quality.means = data.quality %>% arrange(desc(mean.comparator)) %>%
-  distinct_at(vars(c(comparator)), .keep_all = TRUE)
-worst.ids = quality.means[1: round(0.1 * nrow(quality.means)),] %>% pull(comparator)
-
 quality = data.quality %>%
-  mutate(in_worst=case_when(comparator %in% worst.ids ~ comparator,
+  mutate(in_worst=case_when(comparator %in% worst_quality.ids ~ comparator,
                             TRUE ~ "other"))
 p = quality  %>%
   ggplot(aes(x=id,  y=sum_sq_diffs)) +
@@ -130,6 +126,18 @@ p = quality  %>%
 ggsave(paste(PLOT.dir, "quality-sum-sq-diff-to-mean.png", sep=fs), p, width=15, height=10)
 
 
+quality.means %>% 
+  ggplot(aes(x=mean.comparator)) +
+  geom_density() +
+  geom_jitter(aes(y=0, color=comparator), width=0, height=0.2) +
+  ggtitle("avg data quality each proband across stimuli")
+
+data.quality %>% distinct_at(vars(c(id)), .keep_all = TRUE) %>% 
+  ggplot(aes(x=mean.id)) +
+    geom_density() +
+    geom_jitter(aes(y=0, color=id), width=0, height=0.2) +
+    theme(legend.position="bottom") +
+    ggtitle("avg data quality values across stimuili")
 
 # Model-vs-human ----------------------------------------------------------
 plotModelAndBehavioral = function(use_dirichlet_tables){

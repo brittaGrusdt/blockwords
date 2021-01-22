@@ -113,8 +113,13 @@ data.prior.orig = readRDS(paste(RESULT.dir, "human-exp1-orig.rds", sep=fs))
 data.joint.smooth = readRDS(paste(RESULT.dir, "human-exp1-smoothed-exp2.rds", sep=fs))
 data.joint.orig = readRDS(paste(RESULT.dir, "human-exp1-orig-exp2.rds", sep=fs))
 
+# data quality
 data.quality = readRDS(paste(RESULT.dir, fs, "test-data-prior-quality.rds", sep=""))
+quality.means = data.quality %>% arrange(desc(mean.comparator)) %>%
+  distinct_at(vars(c(comparator)), .keep_all = TRUE)
+worst_quality.ids = quality.means[1: round(0.1 * nrow(quality.means)),] %>% pull(comparator)
 
+# training data
 data.train.smooth = data$train.smooth
 data.train.orig = data$train.orig
 # for each participant only the last 50% of all train trials
@@ -126,6 +131,8 @@ data.train.smooth.half = data.train.smooth %>%
   pivot_wider(names_from=question, values_from=response) %>%
   ungroup() %>% 
   dplyr::select(-trial.relation, -trial.idx)
+
+data.train.sliders = data$train.slider_choice
 
 # Other -------------------------------------------------------------------
 # ordered by informativity
@@ -158,7 +165,6 @@ filter_data = function(out.by_comments=NA){
   
   # todo specify!!
   # .. color vision
-  # check these participants in quality of task1 responses?
   dat.color = data$color %>%
     mutate(correct = expected == response,  N=max(trial_number)) %>%
     filter(!correct)
@@ -167,6 +173,10 @@ filter_data = function(out.by_comments=NA){
   if(!is.na(out.by_comments)){
     anti_join(df, out.by_comments)
   }
+  
+  # slider choices
+  # there are 10 slider choice trials per participant
+  
   
   # save filtered data
   # create dir for filtered data if filtered later
