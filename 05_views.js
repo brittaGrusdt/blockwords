@@ -193,7 +193,7 @@ const instructions_train_sliders_procedure = magpieViews.view_generator("instruc
   <br/><br/>
   <img src="stimuli/img/instructions/slider.png" class="instruction_img"><br/><br/>
   <b>1</b>. Each slider indicates the <b>plausibility</b> that a given event will happen.
-  Eventually, we want them to indicate the <b>percent chance</b> that the given event will happen, therefore all possible outcomes will have to sum to 100. You don't have to worry about this: after you have moved all four sliders, <b>your ratings will be readjusted automatically</b> in order to sum up to 100 &mdash; but they will <b>conserve their relative position to each other</b>.
+  Eventually, we want them to indicate the <b>percent chance</b> that the given event will happen, therefore all possible outcomes will have to sum to 100. You don't have to worry about this: <b>after you have moved all four sliders</b>, your ratings will be <b>readjusted automatically</b> in order to sum up to 100 &mdash; but they will <b>conserve their relative position to each other</b>.
   <br/>
   <br/>
   <b>2</b>. If you are not happy with the automatically readjusted values, <b>please correct them such that they represent your genuine beliefs</b>.

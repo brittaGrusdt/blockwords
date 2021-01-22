@@ -474,8 +474,8 @@ functionalityRunBttn = function(anim, answers){
           setTimeout(function () {
             new $.Zebra_Dialog(`The icon below shows what actually happened &mdash;
               you assigned this outcome a ` + `chance of <b>` + val_correct + "</b>%.<br/>" +
-            `Notice that even if you didn't assign this event a 100% chance of occurring,
-            this could be a good guess, since, due to chance, other outcomes may
+            `Notice that even if you assigned this event a rather low chance of occurring,
+            this could still be a good guess, since, due to chance, other outcomes may
             have been possible. <br/>
             Keep using the sliders to express your <b>genuine
             beliefs and uncertainty </b> about what will happen in each scene.<br/><br/>`,
