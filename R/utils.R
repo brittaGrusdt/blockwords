@@ -142,7 +142,7 @@ tidy_data <- function(data, N_trials){
     dat.slider_choice = df %>% filter(startsWith(trial_name, "slider_choice_training")) %>%
       dplyr::select(one_of(cols))
     dat.attention_check = df %>% filter(startsWith(trial_name, "attention_check")) %>%
-      dplyr::select(one_of(cols)) %>% filter(response != expected)
+      dplyr::select(one_of(cols))
   }
   N_participants <- df %>% dplyr::select(prolific_id) %>% unique() %>% nrow()
   stopifnot(nrow(df) == N_participants * (N_trials$test + N_trials$train));

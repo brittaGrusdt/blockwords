@@ -106,6 +106,7 @@ data <- readRDS(paste(RESULT.dir, fs, exp.name, "_tidy.rds", sep=""));
 data.info = data$info
 data.comments = data$comments
 data.color = data$color 
+data.attention = data$train.attention
 
 data.production = readRDS(paste(RESULT.dir, "human-exp2.rds", sep=fs));
 data.prior.smooth = readRDS(paste(RESULT.dir, "human-exp1-smoothed.rds", sep=fs))
@@ -164,19 +165,21 @@ filter_data = function(out.by_comments=NA){
   exp1_smoothed_exp2 = anti_join(data.joint.smooth, ids)
   
   # todo specify!!
-  # .. color vision
-  dat.color = data$color %>%
-    mutate(correct = expected == response,  N=max(trial_number)) %>%
-    filter(!correct)
+  # 2. color vision
+  # data.color
 
-  # ... due to comments (on trial basis)
+  # 3. due to comments (on trial basis)
   if(!is.na(out.by_comments)){
-    anti_join(df, out.by_comments)
+    # anti_join(df, out.by_comments)
   }
+  
+  # 4. attention checks
+  # 3 questions in beginning concerning block icons
+  # data.attention %>% filter(response != expected)
   
   # slider choices
   # there are 10 slider choice trials per participant
-  
+  # data.train.sliders
   
   # save filtered data
   # create dir for filtered data if filtered later
