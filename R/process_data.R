@@ -25,15 +25,6 @@ N_trials = list(train=14+3+10, test=13*2+1, color_vision=6,
 data <- process_data(data_dir, data_fn, result_dir, result_fn, debug_run, N_trials)
 
 # Save data in different formats ------------------------------------------
-# Quality of data in slider ratings: squared distance to mean each table cell
-# entry (considering all participants) summed for each participant across all
-# 4 questions/joint events
-test.prior = data$test %>% filter(str_detect(trial_name, "multiple_slider"))
-prior.quality = test.prior %>%  dplyr::select(-response, -custom_response) %>% 
-  responsesSquaredDiff2Mean() %>%
-  mutate(stimulus_id=factor(stimulus_id))
-save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs))
-
 formatPriorElicitationData = function(test.prior, smoothed=TRUE){
   df.prior_responses = test.prior %>%
     dplyr::select(-custom_response, -QUD, -trial_number, -trial_name) 
@@ -88,11 +79,11 @@ joint.human.orig = left_join(
 save_data(joint.human.orig, paste(result_dir, "human-exp1-orig-exp2.rds", sep=fs))
 save_data(joint.human.smooth, paste(result_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
 
-df = exp1.human.smooth %>% rename(r_smooth=human_exp1) %>%
+# Quality of data in slider ratings:
+df = exp1.human.orig %>% rename(response=human_exp1) %>%
   dplyr::select(-utterance) %>% filter(!is.na(question))
-distances = distancesResponses(df)
-save_data(distances, paste(result_dir, "distances-quality.rds", sep=fs))
-
+prior.quality = distancesResponses(df)
+save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs))
 
 # generate theoretic model tables (as in paper) ---------------------------
 tables.model = makeModelTables(result_dir)

@@ -126,13 +126,14 @@ plot_ratings_across_conditions = function(df, title){
 }
 
 # Quality of the data -----------------------------------------------------
-# For each participant and trial, compute the distance in RESPONSE to all other participants
-# and compute the average distance for this participant from all other participants.
+# for each participant take mean response of all other participants for each
+# stimulus and question, then compute squared difference between participant's
+# response and mean of all others -> 4 values, one for each question (for each participant)
+# to get one value per participant sum these up (for each participant)
 distancesResponses = function(df.prior, save_as=NA){
   df = df.prior %>% 
-    dplyr::select(prolific_id, id, r_smooth, question) %>%
-    unite(col = "id_quest", "id", "question", remove=FALSE) %>%
-    rename(response=r_smooth)
+    dplyr::select(prolific_id, id, response, question) %>%
+    unite(col = "id_quest", "id", "question", sep="__", remove=FALSE)
   
   distances <- tibble()
   for(proband in df.prior$prolific_id %>% unique()) {
@@ -141,57 +142,34 @@ distancesResponses = function(df.prior, save_as=NA){
     for(stimulus in df$id %>% unique()) {
       dat <- df %>% filter(id == (!! stimulus));
       res_proband = res %>%
-        filter(str_detect(string = id_quest, pattern = paste(stimulus, ".*", sep=""))) %>%
+        filter(str_detect(id_quest, paste(stimulus, ".*", sep=""))) %>%
         dplyr::select(id_quest, response) %>% rename(r_proband = response) %>%
         add_column(comparator = proband)
       dat.others = anti_join(dat, res_proband %>% rename(prolific_id=comparator),
-                             by=c("prolific_id", "id_quest")) %>%
-        group_by(id_quest) %>% 
-        mutate(mean.others=mean(response))
+                             by=c("prolific_id", "id_quest"))
+        
+      means.others = dat.others %>% group_by(id_quest) %>% 
+        summarize(mean.others=mean(response), .groups="drop_last")
       
-      distances <- bind_rows(distances,
-                             left_join(dat.others, res_proband, by=c("id_quest")) %>%
-                               mutate(diff = abs(r_proband - response)));
+      diffs = left_join(means.others, res_proband, by=c("id_quest")) %>%
+        mutate(sq_diff = (r_proband - mean.others)**2)
+      distances = bind_rows(distances, diffs)
     }
   }
-  distances <- distances %>% filter(comparator != prolific_id) %>%
-    group_by(comparator, id, question) %>% mutate(mean_diff=mean(diff))
-  df <- distances %>%
-    dplyr::select(comparator, question, mean_diff, id, mean.others) %>%
-    ungroup() %>%
-    mutate(question = factor(question, levels=c("bg", "b", "g", "none"))) %>%
-    group_by(comparator, question, id) %>% distinct() %>% ungroup()
+  dist.sums <- distances %>%
+    separate("id_quest", into=c("id", "question"), sep="__") %>%
+    group_by(id, comparator) %>%
+    summarize(sum_sq_diffs = sum(sq_diff), .groups="drop_last") %>% 
+    mutate(mean.id=mean(sum_sq_diffs), sd.id=sd(sum_sq_diffs)) %>%
+    group_by(comparator) %>% 
+    mutate(mean.comparator=mean(sum_sq_diffs)) %>%
+    ungroup()
   
-  # average diff for each proband (comparator) + id + question
-  stats_all <- df %>% group_by(question, id) %>% 
-    mutate(mu_mean_diff=mean(mean_diff), sd_mean_diff=sd(mean_diff)) %>%
-    dplyr::select(-comparator, -mean_diff, -mean.others) %>% distinct() %>% ungroup()
-    # mutate(limit_up = mu + sd, limit_low = mu - sd)
-  
-  df <- left_join(df, stats_all, by=c("question", "id")) %>%
-    group_by(question, id)
   if(!is.na(save_as)){
     message(paste('save data to:', save_as))
-    saveRDS(df, save_as)
+    saveRDS(dist.sums, save_as)
   }
-  return(df)
-}
-
-# Quality of the data squared diff to mean
-responsesSquaredDiff2Mean = function(df.prior){
-  df = df.prior %>% 
-    dplyr::select(prolific_id, id, r_smooth, question) %>%
-    unite(col = "id_quest", "id", "question", sep="--") %>%
-    rename(response=r_smooth) %>% group_by(id_quest)
-  mus = df %>% group_by(id_quest) %>%
-    summarize(mu=mean(response), .groups="drop_last")
-  dat = left_join(df, mus) %>%
-    separate(id_quest, into=c("stimulus_id", "question"), sep="--") %>% 
-    mutate(sq_mean_diff=(response-mu)**2) %>%
-    group_by(prolific_id, stimulus_id) %>%
-    summarize(sum_sq_diff=sum(sq_mean_diff), .groups="drop_last") %>% 
-    group_by(stimulus_id)
-  return(dat)
+  return(dist.sums)
 }
 
 log_likelihood = function(df, cn, par){

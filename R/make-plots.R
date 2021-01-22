@@ -114,14 +114,21 @@ plotSliderRatingsAndUtts(data.joint.smooth, fn)
 # todo here
 
 # Data Quality ------------------------------------------------------------
-data.quality = readRDS(paste(RESULT.dir, fs, "test-data-prior-quality.rds", sep=""))
-p = data.quality  %>%
-  ggplot(aes(x=stimulus_id,  y=sum_sq_diff)) +
-  geom_boxplot(aes(colour=stimulus_id), outlier.shape=NA) +
-  geom_jitter(height=0, width=0.05, alpha=0.4, size=1.5) +
+quality.means = data.quality %>% arrange(desc(mean.comparator)) %>%
+  distinct_at(vars(c(comparator)), .keep_all = TRUE)
+worst.ids = quality.means[1: round(0.1 * nrow(quality.means)),] %>% pull(comparator)
+
+quality = data.quality %>%
+  mutate(in_worst=case_when(comparator %in% worst.ids ~ comparator,
+                            TRUE ~ "other"))
+p = quality  %>%
+  ggplot(aes(x=id,  y=sum_sq_diffs)) +
+  geom_boxplot(outlier.shape=NA) +
+  geom_jitter(aes(colour=in_worst, shape=in_worst), height=0, width=0.05, alpha=0.4, size=3) +
   theme_bw(base_size = 20) +
-  theme(axis.text.x=element_text(angle=90, vjust=0.5), legend.position="none")
+  theme(axis.text.x=element_text(angle=90, vjust=0.5), legend.position="top")
 ggsave(paste(PLOT.dir, "quality-sum-sq-diff-to-mean.png", sep=fs), p, width=15, height=10)
+
 
 
 # Model-vs-human ----------------------------------------------------------

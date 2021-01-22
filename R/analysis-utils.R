@@ -113,7 +113,7 @@ data.prior.orig = readRDS(paste(RESULT.dir, "human-exp1-orig.rds", sep=fs))
 data.joint.smooth = readRDS(paste(RESULT.dir, "human-exp1-smoothed-exp2.rds", sep=fs))
 data.joint.orig = readRDS(paste(RESULT.dir, "human-exp1-orig-exp2.rds", sep=fs))
 
-# data.distances = readRDS(paste(RESULT.dir, "distances-quality.rds", sep=fs))
+data.quality = readRDS(paste(RESULT.dir, fs, "test-data-prior-quality.rds", sep=""))
 
 data.train.smooth = data$train.smooth
 data.train.orig = data$train.orig
@@ -142,73 +142,44 @@ levels.responses = rev(c(
   standardized.sentences$might_nb, standardized.sentences$might_ng
 ))
 
-
-
 # Filter Data ---------------------------------------------------------------
 # according to criteria filter out and save all filtered data separetely
-filter_data = function(){
+filter_data = function(out.by_comments=NA){
+  
+  # 1. utterance task 2 is rated with 0 in task 1
   ids = data.joint.orig %>%
     filter(!is.na(human_exp2) & human_exp1 == 0) %>%
     dplyr::select(prolific_id, id) %>% distinct()
+  
+  exp2 = anti_join(data.production, ids)
+  exp1_smoothed = anti_join(data.prior.smooth, ids)
+  exp1_orig = anti_join(data.prior.orig, ids)
+  exp1_smoothed_exp2 = anti_join(data.joint.smooth, ids)
+  
+  # todo specify!!
+  # .. color vision
+  # check these participants in quality of task1 responses?
+  dat.color = data$color %>%
+    mutate(correct = expected == response,  N=max(trial_number)) %>%
+    filter(!correct)
+
+  # ... due to comments (on trial basis)
+  if(!is.na(out.by_comments)){
+    anti_join(df, out.by_comments)
+  }
   
   # save filtered data
   # create dir for filtered data if filtered later
   filtered_dir <- paste(RESULT.dir, "filtered_data", sep=fs)
   if(!dir.exists(filtered_dir)){dir.create(filtered_dir, recursive=TRUE);
   }
-  save_data(anti_join(data.production, ids),
+  save_data(exp2,
     paste(filtered_dir, "human-exp2.rds", sep=fs));
-  save_data(anti_join(data.prior.smooth, ids),
+  save_data(exp1_smoothed,
     paste(filtered_dir, "human-exp1-smoothed.rds", sep=fs))
-  save_data(anti_join(data.prior.orig, ids),
+  save_data(exp1_orig,
     paste(filtered_dir, "human-exp1-orig.rds", sep=fs))
-  save_data(anti_join(data.joint.smooth, ids),
+  save_data(exp1_smoothed_exp2,
     paste(filtered_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
 }
-  
-  
-  
-  # todo: tidy up following!
-  
-  # # load smoothed tables
-  # tables = readRDS(paste(target_dir, "empiric-all-tables-smooth.rds", sep=fs))
-  # data = readRDS(paste(target_dir, fs, exp.name, "_tidy.rds", sep=""))
-  # stimuli = data$test$id %>% unique()
-  # df = tibble()
-  # if(by_quality) {
-  #   exp1.quality = readRDS(paste(paste(target_dir, "filtered_data", sep=fs),
-  #                                "test-data-prior-quality.rds", sep=fs))
-  #   dat.quality = exp1.quality %>%
-  #     # mutate(quantiles=list(quantile(sum_sq_diff))) %>%
-  #     mutate(iqr=IQR(sum_sq_diff), mean=mean(sum_sq_diff),
-  #            outlier=sum_sq_diff < (mean-2*iqr) | (sum_sq_diff>mean + 2*iqr)) %>%
-  #     filter(!outlier) %>% dplyr::select(prolific_id, stimulus_id)
-  #   
-  #   df = bind_rows(df, right_join(tables, dat.quality %>% rename(id=stimulus_id)))
-  # }
-  # 
-  # if(by_color_vision){
-  #   dat.color = data$color %>%
-  #     mutate(correct = expected == response,  N=max(trial_number)) %>%
-  #     filter(correct) %>% group_by(prolific_id) %>%
-  #     mutate(n=n()) %>% filter(n == N) %>% dplyr::select(prolific_id) %>% unique() %>%
-  #     add_column(id=list(stimuli)) %>%
-  #     unnest(c(id))
-  #   
-  #   message(paste("#participants excluded as at least 1 wrong color question:",
-  #                 length(data$color$prolific_id %>% unique())-length(dat.color$prolific_id %>% unique)))
-  #   df=right_join(df, dat.color)
-  # }
-  # 
-  # if(!is.na(out.by_comments)){
-  #   df = anti_join(df, out.by_comments)
-  # }
-  # save_to = paste(target_dir, "filtered_data",
-  #                 "empiric-filtered-tables-smooth.rds", sep=fs)
-  # saveRDS(df, save_to)
-  # print(paste("saved filtered smooth tables to:", save_to))
-  # message(paste("remaining tables:", nrow(df), "(", nrow(df)/nrow(tables), ")"))
-  # return(df)
-
-
 
