@@ -290,7 +290,7 @@ fridge_ex.QUD = `TRY OUT EXAMPLE &mdash;` + fridge_trials[0].QUD;
 const TRAIN_FRIDGE_TRIALS = [fridge_ex];
 
 let slider_choice_ids1 = ["all-equal", "both-or-none"]
-let other_ids = [
+let slider_choice_ids2 = [
   ["both-or-none-probably-both", "both-or-none-rather-none"],
   ["probably-red-but-not-yellow", "probably-yellow-but-not-red"],
   ["red-maybe-yellow", "yellow-maybe-red"],
@@ -327,7 +327,7 @@ let qs = questions1.concat(_.map(indices, function(i, idx) {
   return(other_questions[idx][i] + "</b>")
 }));
 let slider_choice_ids = slider_choice_ids1.concat(_.map(indices, function(i, idx) {
-  return(other_ids[idx][i])
+  return(slider_choice_ids2[idx][i])
 }));
 
 let slider_choice_trials = _.map(_.range(slider_choice_ids.length), function (i) {
@@ -338,7 +338,7 @@ let slider_choice_trials = _.map(_.range(slider_choice_ids.length), function (i)
     option1: "yes",
     option2: "no",
     expected: "yes",
-    id: 'slider_choice_yes' + i
+    id: 'sc_yes' + i
   }
   return trial
 });
@@ -348,7 +348,7 @@ let ids_no = [];
 for(idx in [0, 1, 3]){
   let i = indices[idx]
   let i_wrong = i==0 ? 1 : 0
-  let id = other_ids[idx][i_wrong]
+  let id = slider_choice_ids2[idx][i_wrong]
   id = idx==0 ? id + "-not0" : id;
   ids_no.push(id) // other picture
   let q = other_questions[idx][i].replace("thinks that", "is very confident that");
@@ -362,10 +362,26 @@ let choice_expected_no = _.map(_.range(0, ids_no.length), function(i){
     option1: "yes",
     option2: "no",
     expected: "no",
-    id: 'slider_choice_no' + i
+    id: 'sc_no' + i
   }
 });
-slider_choice_trials = _.shuffle(slider_choice_trials);
 slider_choice_trials.splice(1, 0, choice_expected_no[0]);
 slider_choice_trials.splice(5, 0, choice_expected_no[1]);
 slider_choice_trials.splice(8, 0, choice_expected_no[2]);
+
+// order slider choice trials considering difficulty
+let sc_low = _.shuffle(['sc_yes0', 'sc_yes1', 'sc_yes3', 'sc_yes5'])
+let sc_middle = _.shuffle(['sc_no1', 'sc_yes2', 'sc_yes4', 'sc_yes6'])
+let sc_hard = _.shuffle(['sc_no0', 'sc_no2'])
+let sc_ids = _.flatten(_.zip(sc_low.slice(0,2), sc_middle.slice(0,2),
+                             sc_low.slice(2,4), sc_middle.slice(2,4)))
+sc_ids.splice(4, 0, sc_hard[0])
+sc_ids.push(sc_hard[1])
+
+function compare_sc(o1, o2) {
+  if (sc_ids.indexOf(o1.id) > sc_ids.indexOf(o2.id)){return 1
+  } else{
+    return -1
+  }
+}
+slider_choice_trials.sort(compare_sc);

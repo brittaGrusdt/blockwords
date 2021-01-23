@@ -72,11 +72,12 @@ pseudoRandomTestTrials = function(){
   let if1_conj = _.shuffle(["if1_hh", "if1_lh"]);
   let if2_conj = _.shuffle(["if2_hl", "if2_ll"]);
   let ind_conj = _.shuffle(["independent_hh", "independent_ll"]);
-  let ind = _.shuffle(["independent_uh", "independent_ul", "independent_hl"]);
+  let ind = _.shuffle(["independent_uh", "independent_ul"]);
+  ind.splice(1, 0, "independent_hl");
   let if1 = _.shuffle(["if1_uh", "if2_ul"]);
   let if2 = _.shuffle(["if1_u-Lh", "if2_u-Ll"]);
   // trials added such that not two same kinds directly after another, and
-  // expected conditinals/conjunctions evenly distributed
+  // expected conditinals/conjunctions approximately evenly distributed
   let conditionals = _.flatten(_.shuffle([if1, if2]));
   let trials = _.flatten(_.zip(conditionals.slice(0, 3), ind)).concat(conditionals[3]);
   let conjunctions = []
