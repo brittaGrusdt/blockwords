@@ -289,14 +289,18 @@ fridge_ex.id = id_slider
 fridge_ex.QUD = `TRY OUT EXAMPLE &mdash;` + fridge_trials[0].QUD;
 const TRAIN_FRIDGE_TRIALS = [fridge_ex];
 
-let slider_choice_ids1 = ["all-equal", "both-or-none"]
+// let slider_choice_ids1 = ["all-equal", "both-or-none"]
+let slider_choice_ids1 = ["sc_yes0", "sc_yes1"]
 let slider_choice_ids2 = [
-  ["both-or-none-probably-both", "both-or-none-rather-none"],
-  ["probably-red-but-not-yellow", "probably-yellow-but-not-red"],
-  ["red-maybe-yellow", "yellow-maybe-red"],
-  ["red-probably-not-yellow", "yellow-probably-not-red"],
-  ["red-probably-yellow", "yellow-probably-red"]
+  // ["both-or-none-probably-both", "both-or-none-rather-none"],
+  // ["probably-red-but-not-yellow", "probably-yellow-but-not-red"],
+  // ["red-maybe-yellow", "yellow-maybe-red"],
+  // ["red-probably-not-yellow", "yellow-probably-not-red"],
+  // ["red-probably-yellow", "yellow-probably-red"]
 ];
+slider_choice_ids2 = _.map(_.range(2,7), function(i){
+  return(["sc_yes" + i + "_0", "sc_yes" + i + "_1"])
+});
 
 let part1 = `The sliders represent the beliefs of a person who <br/>` ;
 let sc_questions1 = [
@@ -324,7 +328,7 @@ let indices = _.map(_.range(0, 5), function(i){
   return(Math.round(Math.random()))
 })
 let qs = sc_questions1.concat(_.map(indices, function(i, idx) {
-  return(sc_questions2[idx][i] + "</b>")
+  return(sc_questions2[idx][i])
 }));
 let slider_choice_ids = slider_choice_ids1.concat(_.map(indices, function(i, idx) {
   return(slider_choice_ids2[idx][i])
@@ -338,7 +342,8 @@ let slider_choice_trials = _.map(_.range(slider_choice_ids.length), function (i)
     option1: "yes",
     option2: "no",
     expected: "yes",
-    id: 'sc_yes' + i,
+    // id: 'sc_yes' + i,
+    id: slider_choice_ids[i],
     correct_statement: "</br>" + qs[i]
   }
   return trial
@@ -370,7 +375,7 @@ let choice_expected_no = _.map(_.range(0, ids_no.length), function(i){
     option1: "yes",
     option2: "no",
     expected: "no",
-    id: 'sc_no' + i,
+    id: "no_" + ids_no[i],
     correct_statement: correct_res[i]
   }
 });
