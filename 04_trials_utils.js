@@ -1,62 +1,22 @@
 // TRAINING TRIALS
 // data for animations
 pseudoRandomTrainTrials = function(){
-  let stimuli = Array(15).fill('');
-  let trials = Array(15).fill('');
   let dict = TrainStimuli.map_category;
-  // dont start with uncertain3, ac2, ac3, 'ssw1'
-  let unc = _.shuffle(_.values(dict.uncertain));
-  let unc012 = _.filter(unc, function(obj){
-    return obj.id != "uncertain3"
-  });
-  let unc3 = dict.uncertain.uncertain3;
-
+  // start with simple trial where something happens: uncertain3 (now high/low (but name not changed))
+  let fall1 = [dict.uncertain.uncertain3, dict.uncertain.uncertain1,
+               dict.uncertain.uncertain2]
+  let fall2 = _.shuffle([dict.if2.ssw0, dict.if1.ac2, dict.if1.ac0, dict.independent.ind1])
+  let fall01 = _.shuffle([dict.if2.ssw1, dict.if1.ac3, dict.if1.ac1, dict.independent.ind0])
   let ramp = _.shuffle(_.values(dict.ramp));
 
-  let if2 = [dict.if2.ssw0, dict.if2.ssw1];
-  let ind_ac = _.shuffle([dict.independent.ind0,
-                          dict.independent.ind1,
-                          if2[0]]);
-  // don't put ac2 and ac3 in "consequent" if1-trials (here nothing happens)
-  let ac01 = _.shuffle([dict.if1.ac0, dict.if1.ac1]);
-  let ac23 = _.shuffle([dict.if1.ac2, dict.if1.ac3]);
-  let if1 = _.shuffle([ac01, ac23]);
-  let i_ac23 = [];
-  [1, 8].forEach(function(idx, i){
-    stimuli[idx] = if1[0][i];
-    trials[idx] = getTrialById(TRAIN_TRIALS, if1[0][i].id);
-    (if1[0][i].id == "ac2" || if1[0][i].id == "ac3") ? i_ac23.push(idx) : null;
-  });
-  [5, 11].forEach(function(idx, i){
-    stimuli[idx] = if1[1][i];
-    trials[idx] = getTrialById(TRAIN_TRIALS, if1[1][i].id);
-    (if1[1][i].id == "ac2" || if1[1][i].id == "ac3") ? i_ac23.push(idx) : null;
-  });
+  let fall02 = _.flatten(_.zip(fall01, fall2))
+  fall02.splice(4, 0, dict.uncertain.uncertain0)
+  let stimuli = fall1.slice(0, 2).concat(ramp).concat(fall02)
+  stimuli = stimuli.concat([fall1[2], dict.independent.ind2])
 
-  // uncertain3 shall not be directely after ac2 or ac3 (here nothing happens)
-  let indices = _.without([2, 6, 9, 12], i_ac23[0] + 1, i_ac23[1] + 1);
-  stimuli[indices[0]] = unc3;
-  trials[indices[0]] = getTrialById(TRAIN_TRIALS, 'uncertain3');
-
-  [indices[1], i_ac23[0]+1, i_ac23[1]+1].forEach(function(idx, i){
-    stimuli[idx] = unc012[i]
-    trials[idx] = getTrialById(TRAIN_TRIALS, unc012[i].id);
-  });
-
-  [3, 4].forEach(function(idx, i){
-    stimuli[idx] = ramp[i];
-    trials[idx] = getTrialById(TRAIN_TRIALS, ramp[i].id);
-  });
-  [0, 7, 10].forEach(function(idx, i){
-    stimuli[idx] = ind_ac[i]
-    trials[idx] = getTrialById(TRAIN_TRIALS, ind_ac[i].id);
+  let trials = _.map(_.range(0, stimuli.length), function(i){
+    return(getTrialById(TRAIN_TRIALS, stimuli[i].id))
   })
-  stimuli[13] = if2[1];
-  trials[13] = getTrialById(TRAIN_TRIALS, if2[1].id);
-
-  stimuli[14] = dict.independent.ind2
-  trials[14] = getTrialById(TRAIN_TRIALS, "ind2");
-
   return {stimuli_data: stimuli, trial_data: trials}
 }
 
