@@ -298,38 +298,38 @@ let slider_choice_ids2 = [
   ["red-probably-yellow", "yellow-probably-red"]
 ];
 
-let part1 = `The sliders represent the beliefs of a person who <br/><b>` ;
-let questions1 = [
-  part1 + `is <b>completely uncertain</b> whether the blocks fall, that is the person has no tendency towards any of the four events.`,
-  part1 + `thinks that either both blocks or none of the two blocks fall.`
+let part1 = `The sliders represent the beliefs of a person who <br/>` ;
+let sc_questions1 = [
+  part1 + `is <b>completely uncertain</b> whether the blocks fall, that is the person has <b>no tendency</b> towards any of the four events.`,
+  part1 + `<b>thinks</b> that <b>either both blocks</b> or <b>none</b> of the two blocks fall.`
 ]
-let other_questions = [
-  [part1 + `thinks that either both or none of the two blocks fall <br/>with a tendency towards the event that both blocks fall.`,
-  part1 + `thinks that either both or none of the two blocks fall <br/>with a tendency towards the event that no block falls.`
+let sc_questions2 = [
+  [part1 + `<b>thinks</b> that <b>either both</b> or <b>none</b> of the two blocks fall <br/>with a <b>tendency</b> towards the event that <b>both blocks fall</b>.`,
+  part1 + `<b>thinks</b> that <b>either both</b> or <b>none</b> of the two blocks fall <br/>with a <b>tendency</b> towards the event that <b>no block falls</b>.`
   ],
-  [part1 + `is pretty certain that the red block falls but not the yellow.`,
-   part1 + `is pretty certain that the yellow block falls but not the red.`
+  [part1 + `is <b>pretty certain</b> that the <b>red block falls</b> but <b>not the yellow</b>.`,
+   part1 + `is <b>pretty certain</b> that the <b>yellow block falls</b> but <b>not the red</b>.`
   ],
-  [part1 + `thinks that red falls but is uncertain whether or not yellow falls.`,
-   part1 + `thinks that yellow falls but is uncertain whether or not red falls.`
+  [part1 + `<b>thinks</b> that <b>red falls</b> but is <b>uncertain whether or not yellow falls</b>.`,
+   part1 + `<b>thinks</b> that <b>yellow falls</b> but is <b>uncertain whether or not red falls</b>.`
   ],
-  [part1 + `thinks that red falls but probably not yellow.`,
-   part1 + `thinks that yellow falls but probably not red.`
+  [part1 + `<b>thinks</b> that <b>red falls</b> but <b>probably not yellow</b>.`,
+   part1 + `<b>thinks</b> that <b>yellow falls </b>but <b>probably not red</b>.`
   ],
-  [part1 + `thinks that red falls and that yellow is more likely to fall than not to fall.`,
-  part1 + `thinks that yellow falls and that red is more likely to fall than not to fall.`]
+  [part1 + `<b>thinks</b> that <b>red falls</b> and that <b>yellow</b> is <b>more likely to fall than not to fall</b>.`,
+  part1 + `<b>thinks</b> that <b>yellow falls</b> and that <b>red</b> is <b>more likely to fall than not to fall</b>.`]
 ];
-
+// randomly choose colors in question
 let indices = _.map(_.range(0, 5), function(i){
   return(Math.round(Math.random()))
 })
-let qs = questions1.concat(_.map(indices, function(i, idx) {
-  return(other_questions[idx][i] + "</b>")
+let qs = sc_questions1.concat(_.map(indices, function(i, idx) {
+  return(sc_questions2[idx][i] + "</b>")
 }));
 let slider_choice_ids = slider_choice_ids1.concat(_.map(indices, function(i, idx) {
   return(slider_choice_ids2[idx][i])
 }));
-
+// questions 'yes' expected
 let slider_choice_trials = _.map(_.range(slider_choice_ids.length), function (i) {
   let trial = {
     QUD: "Please click on the button with the correct answer.",
@@ -338,21 +338,29 @@ let slider_choice_trials = _.map(_.range(slider_choice_ids.length), function (i)
     option1: "yes",
     option2: "no",
     expected: "yes",
-    id: 'sc_yes' + i
+    id: 'sc_yes' + i,
+    correct_statement: "</br>" + qs[i]
   }
   return trial
 });
-// add trials with wrong statements
+// question 'no' expected: add 3 (particular) trials change text not picture
 let qs_no = [];
 let ids_no = [];
+let correct_res = [];
 for(idx in [0, 1, 3]){
   let i = indices[idx]
   let i_wrong = i==0 ? 1 : 0
   let id = slider_choice_ids2[idx][i_wrong]
   id = idx==0 ? id + "-not0" : id;
-  ids_no.push(id) // other picture
-  let q = other_questions[idx][i].replace("thinks that", "is very confident that");
+  // opposite picture, (for both-or-none-probably-both/rather-none,
+  // picture is slightly different, other two options have non-zero probability)
+  ids_no.push(id)
+  let q = sc_questions2[idx][i].replace("thinks that", "is very confident that");
   qs_no.push(q + "</b>") // but same question
+  let rc = sc_questions2[idx][i_wrong].replace("thinks that", "is very confident that")
+  rc = rc.replace("yellow", "<i>YELLOW</i>")
+  rc = rc.replace("red", "<i>RED</i>")
+  correct_res.push("</br>" + rc)
 }
 let choice_expected_no = _.map(_.range(0, ids_no.length), function(i){
   return {
@@ -362,7 +370,8 @@ let choice_expected_no = _.map(_.range(0, ids_no.length), function(i){
     option1: "yes",
     option2: "no",
     expected: "no",
-    id: 'sc_no' + i
+    id: 'sc_no' + i,
+    correct_statement: correct_res[i]
   }
 });
 slider_choice_trials.splice(1, 0, choice_expected_no[0]);

@@ -442,21 +442,29 @@ const slider_choice_training = magpieViews.view_generator('sentence_choice', {
     trial_data = magpieUtils.view.save_config_trial_data(config.data[CT], trial_data);
     magpie.trial_data.push(trial_data);
     if (response === config.data[CT].expected) {
-        $.Zebra_Dialog(`Your answer is correct! Yey!`,
+        $.Zebra_Dialog(`Your answer is correct! Yey!` + config.data[CT].correct_statement,
         { type: "confirmation",
           keyboard: true,
           custom_class: "trainResult",
-          title: ""
+          title: "",
+          position: ['center', 'bottom - 50'],
+          onClose: function(caption, prompt) {
+              magpie.findNextView();
+          }
         });
     } else {
-      $.Zebra_Dialog(`Sorry you answer was wrong.`,
+      $.Zebra_Dialog(`Sorry you answer was wrong.` + config.data[CT].correct_statement,
       { type: "error",
         keyboard: true,
         custom_class: "trainResult",
-        title: ""
+        title: "",
+        position: ['center', 'bottom - 50'],
+        onClose: function(caption, prompt) {
+            magpie.findNextView();
+        }
       });
     }
-    magpie.findNextView();
+    // magpie.findNextView();
   });
   }
 });
