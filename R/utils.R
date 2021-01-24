@@ -103,8 +103,8 @@ tidy_train <- function(df){
     dplyr::select(-response_idx, -question_idx) %>%
     mutate(prolific_id = factor(prolific_id), id = factor(id)) %>%
     group_by(prolific_id, id) %>%
-    mutate(response = as.numeric(response), response = response/100)%>%
-    add_smoothed_exp1("train")
+    mutate(response = as.numeric(response), response = response/100) %>%
+    add_smoothed_exp1()
   
   dat.train.smooth = dat.train %>% rename(response=r_smooth) %>%
     dplyr::select(-r_orig, -n, -trial_name)
@@ -252,16 +252,13 @@ cluster_responses <- function(dat, quest){
 
 # @arg df1 in long-format
 # smooth slider ratings from prior elicitation experiment (exp1)
-add_smoothed_exp1 <- function(df1, test_or_train){
-  data = df1 %>% group_by(prolific_id, id)
-  df = data %>% filter(sum(response)!=0)
-  zeros = (nrow(data) - nrow(df)) / 4
-  message(paste("#datapoints filtered out as all 4 events rated as 0:", zeros))
+add_smoothed_exp1 <- function(df1){
+  df = df1 %>% group_by(prolific_id, id) %>%
+    filter(sum(response) != 0)
   # normalize such that slider responses sum up to 1 but also keep original response
   df.with_smoothed = df %>%
     mutate(n=sum(response + epsilon), r_smooth=(response + epsilon)/n) %>%
     rename(r_orig=response)
-  print(paste("in", test_or_train, "data"))
   return(df.with_smoothed)
 }
 
@@ -357,7 +354,7 @@ process_data <- function(data_dir, data_fn, result_dir, result_fn, debug_run, N_
   # Further process TEST-trial data --------------------------------------------
   data <- dat.tidy$test
   df1 <- data %>% filter(str_detect(trial_name, "multiple_slider"))
-  df1 <- add_smoothed_exp1(df1, "test");
+  df1 <- add_smoothed_exp1(df1);
   df1 <- standardize_color_groups_exp1(df1)
   save_prob_tables(df1, result_dir, result_fn);
   df2 <- data %>% filter(str_detect(trial_name, "fridge_")) %>%

@@ -150,49 +150,106 @@ levels.responses = rev(c(
   standardized.sentences$might_nb, standardized.sentences$might_ng
 ))
 
+standardized.conj = c(standardized.sentences$bg, standardized.sentences$b,
+                       standardized.sentences$g, standardized.sentences$none)
+standardized.lit = c(standardized.sentences$only_b, standardized.sentences$only_g,
+                      standardized.sentences$only_nb, standardized.sentences$only_ng)
+standardized.ifs = levels.responses[str_detect(levels.responses, "if")]
+
+
 # Filter Data ---------------------------------------------------------------
+exclude_data = function(ids){
+  anti_by = c("prolific_id", "id")
+  exp2 = anti_join(data.production, ids, by=anti_by)
+  exp1_smoothed = anti_join(data.prior.smooth, ids, by=anti_by)
+  exp1_orig = anti_join(data.prior.orig, ids, by=anti_by)
+  exp1_smoothed_exp2 = anti_join(data.joint.smooth, ids, by=anti_by)
+  return(list(exp2=exp2, exp1_sm=exp1_smoothed, exp1_orig=exp1_orig,
+              exp1_sm_exp2=exp1_smoothed_exp2))
+}
+
 # according to criteria filter out and save all filtered data separetely
+# @arg out.by_comments: tibble with cols: 'prolific_id', 'id'
 filter_data = function(out.by_comments=NA){
-  
-  # 1. utterance task 2 is rated with 0 in task 1
-  ids = data.joint.orig %>%
+  df.all = data.production %>% dplyr::select(prolific_id, id)
+  # exclude all trials of a participant
+  # 1. attention check questions in beginning concerning block icons
+  df.att = data.attention %>% filter(response != expected) 
+  df.out = tibble()
+  if(nrow(df.att) != 0){
+    participants.att = df.att$prolific_id %>% unique()
+    df.att = df.all %>% filter(prolific_id %in% participants.att) %>%
+      dplyr::select(prolific_id, id) %>% distinct()
+    df.out = bind_rows(df.out, df.att)
+    message(paste(length(participants.att), 'participants completely excluded due
+                  to attention checks'))
+  }
+  # 2. color vision questions
+  dat.col = data.color %>% filter(response != expected) %>%
+    dplyr::select(prolific_id, id) %>%
+    group_by(prolific_id) %>%
+    mutate(n_wrong=n()) %>% filter(n_wrong >= 1)
+  if(nrow(dat.col) != 0){
+    participants.col = dat.col$prolific_id %>% unique()
+    df.col = df.all %>% filter(prolific_id %in% participants.col) %>%
+      dplyr::select(prolific_id, id) %>% distinct()
+    df.out = bind_rows(df.out, df.col)
+    message(paste(length(participants.col),
+                  'participant(s) completely excluded due to >= 1 color questions wrong'))
+  }
+  # 3. slider-choice trials
+  dat.sliders = data.train.sliders %>%
+    mutate(correct = response == expected, .groups="drop_last") %>%
+    group_by(prolific_id) %>%
+    summarize(ratio_correct=sum(correct)/n(), .groups="drop_last") %>%
+    filter(ratio_correct < 0.5)
+  if(nrow(dat.sliders) != 0){
+    participants.sc = dat.sliders$prolific_id %>% unique()
+    df.sc = df.all %>% filter(prolific_id %in% participants.sc) %>%
+      dplyr::select(prolific_id, id) %>% distinct()
+    df.out = bind_rows(df.out, df.sc)
+    message(paste(length(participants.sc),
+            'participant(s) completely excluded due to less than 50% of slider-choice trials correct.'))
+  } 
+  # single trials
+  # 4. utterance task 2 is rated with 0 in task 1
+  df.utt = data.joint.orig %>%
     filter(!is.na(human_exp2) & human_exp1 == 0) %>%
     dplyr::select(prolific_id, id) %>% distinct()
+  message(paste(nrow(df.utt), 'trial(s) excluded due to 0-probability in task 1'))
+  df.out = bind_rows(df.out, df.utt)
   
-  exp2 = anti_join(data.production, ids)
-  exp1_smoothed = anti_join(data.prior.smooth, ids)
-  exp1_orig = anti_join(data.prior.orig, ids)
-  exp1_smoothed_exp2 = anti_join(data.joint.smooth, ids)
-  
-  # todo specify!!
-  # 2. color vision
-  # data.color
-
-  # 3. due to comments (on trial basis)
+  # 5. due to comments
   if(!is.na(out.by_comments)){
-    # anti_join(df, out.by_comments)
+    df.out = bind_rows(df.out, out.by_comments)
   }
-  
-  # 4. attention checks
-  # 3 questions in beginning concerning block icons
-  # data.attention %>% filter(response != expected)
-  
-  # slider choices
-  # there are 10 slider choice trials per participant
-  # data.train.sliders
+  ratio_ex = round(nrow(df.out)/nrow(df.all), 2) * 100
+  message(paste(ratio_ex, '% of all trials excluded in total.', sep=""))
   
   # save filtered data
+  df.filtered = exclude_data(df.out)
   # create dir for filtered data if filtered later
   filtered_dir <- paste(RESULT.dir, "filtered_data", sep=fs)
   if(!dir.exists(filtered_dir)){dir.create(filtered_dir, recursive=TRUE);
   }
-  save_data(exp2,
+  save_data(df.filtered$exp2,
     paste(filtered_dir, "human-exp2.rds", sep=fs));
-  save_data(exp1_smoothed,
+  save_data(df.filtered$exp1_sm,
     paste(filtered_dir, "human-exp1-smoothed.rds", sep=fs))
-  save_data(exp1_orig,
+  save_data(df.filtered$exp1_orig,
     paste(filtered_dir, "human-exp1-orig.rds", sep=fs))
-  save_data(exp1_smoothed_exp2,
+  save_data(df.filtered$exp1_sm_exp2,
     paste(filtered_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
+  
+  # also save with all data (and with empiric-ids)
+  data = readRDS(paste(RESULT.dir, fs, exp.name, "_tidy.rds", sep=""));
+  df1 = data$test %>% filter(str_detect(trial_name, "multiple_slider"))
+  df1 = anti_join(df1, df.out, by=c("prolific_id", "id")) %>%
+    dplyr::select(-response) %>% rename(response=r_orig)
+  df1 = add_smoothed_exp1(df1);
+  df1 = standardize_color_groups_exp1(df1)
+  save_prob_tables(df1, filtered_dir, exp.name);
+  
+  return(df.filtered)
 }
 

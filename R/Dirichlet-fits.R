@@ -170,7 +170,7 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
   tables.model = tables.generated.all %>%
     dplyr::select(-row_id, -ends_with(".round"), -augmented, -only_augmented)
   
-  if(fn=="dirichlet"){
+  if(startsWith(fn, "dirichlet")){
     tbls = tables.model %>% group_by(stimulus) %>% 
       rename(bg=AC, b=`A-C`, g=`-AC`, none=`-A-C`) %>%
       dplyr::select(stimulus, table_id, bg, b, g, none)
@@ -184,7 +184,7 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
     tables.toWPPL = bind_rows(tables.ll) %>% group_by(table_id) %>% 
       mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
              ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) 
-  } else if(fn=="latent-mixture"){
+  } else if(startsWith(fn, "latent-mixture")){
     # tables.toWPPL = 
   } else if(fn=="model-tables") {
     indep_sigma <- configure(c("model_tables"))$indep_sigma
