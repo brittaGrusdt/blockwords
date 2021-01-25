@@ -13,10 +13,16 @@ library(ggforce)
 source(here("R", "analysis-utils.R"))
 ```
 
+```{r, data}
+exp.name = "toy-blocks-pilot-2"
+DATA = load_exp_data(exp.name, use_filtered=FALSE)
+```
+
 ## Meta info about participants
 
 ```{r, meta, echo=FALSE}
-df <- data$info %>% group_by(prolific_id) %>% distinct()
+df <- DATA$info %>% group_by(prolific_id) %>% distinct() %>%
+  mutate(education=as_factor(education), gender=as_factor(gender))
 p <- df %>%
   ggplot(aes(x=factor(0), y=timeSpent)) + 
   geom_boxplot(outlier.shape = NA) +
@@ -35,7 +41,7 @@ df %>% ungroup() %>%  group_by(prolific_id) %>%  summary()
 ## Reaction Times per stimulus
 
 ```{r, reaction-times, echo=FALSE}
-df <- data.production %>% dplyr::select(prolific_id, id, RT) %>% group_by(id) %>%
+df <- DATA$production %>% dplyr::select(prolific_id, id, RT) %>% group_by(id) %>%
   distinct()
 
 dat.RT = df %>% group_by(id) %>% summarise(mu=mean(RT), sd=sd(RT), .groups="drop_last")
@@ -56,18 +62,22 @@ for(pa in seq(1,2)) {
 }
 ```
 
-# General comments
+# General comments all participants
 
 ```{r, echo=FALSE}
-df.comments = data.comments %>% filter(!is.na(comments) & comments!="")
+dat <- readRDS(here("data", "prolific", exp.name, paste(exp.name, "_tidy.rds", sep="")));
+```
+
+```{r}
+df.comments = dat$comments %>% filter(!is.na(comments) & comments!="")
 print(df.comments$comments)
 ```
 
 
-# Color vision trials
+# Color vision trials all participants
 
 ```{r, color-vision, echo=FALSE}
-df <- data.color %>% group_by(prolific_id, id) %>%
+df <- dat$color %>% group_by(prolific_id, id) %>%
   mutate(correct = expected == response)
 
 df %>%
@@ -81,9 +91,9 @@ pids.false_colors = df %>% filter(correct == FALSE)  %>% pull(prolific_id)
 Custom responses
 
 ```{r, custom-responses, fig.height = 10, fig.width = 10}
-dat.custom = data.production %>% filter(!is.na(custom_response)) %>%
+dat.custom = DATA$production %>% filter(!is.na(custom_response)) %>%
   group_by(prolific_id, id) %>% mutate(custom_response = tolower(custom_response))
-total = data.production %>% dplyr::select(prolific_id, id) %>% distinct()
+total = DATA$production %>% dplyr::select(prolific_id, id) %>% distinct()
 print(paste('nb total custom responses given:', nrow(dat.custom), 'out of', nrow(total), 
             '(', nrow(dat.custom)/nrow(total), ')'))
 df = dat.custom %>% rename(res.given=response, response=custom_response) %>%
@@ -105,7 +115,7 @@ df %>% group_by(custom_response) %>% mutate(n=n()) %>%
 For each stimulus, which response was created how often?
 
 ```{r, echo=FALSE, fig.height = 12}
-df.production.means = data.production %>%
+df.production.means = DATA$production %>%
   dplyr::select(id, response, prolific_id) %>% 
   group_by(id,response) %>% 
   mutate(n=n()) %>% group_by(id) %>% mutate(N=n(), ratio=n/N) %>%
@@ -127,20 +137,21 @@ df %>%
 
 
 ```{r}
-df.production.means = data.production %>% filter(id != "ind2") %>%
-  select(response, prolific_id, id) %>% 
+df.production.means = DATA$production %>% filter(id != "ind2") %>%
+  dplyr::select(response, prolific_id, id) %>% 
   group_by(prolific_id,response) %>% 
   mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
   arrange(desc(ratio)) %>% distinct() %>%
   mutate(response=as.factor(response))
 
 # also note time spent
-df = left_join(df.production.means, data.info %>% select(prolific_id, timeSpent), 
+df = left_join(df.production.means,
+               DATA$info %>% dplyr::select(prolific_id, timeSpent), 
                by=c("prolific_id")) %>% 
   mutate(timeSpent=round(timeSpent, 2))
 
 p  = df %>%
-  select(prolific_id, response, n, timeSpent) %>% distinct() %>% 
+  dplyr::select(prolific_id, response, n, timeSpent) %>% distinct() %>% 
   ggplot() +
   geom_bar(aes(y=response, x=n), stat="identity") +
   geom_text(aes(x=9, y="green might not fall", label=timeSpent), color="red") + 
@@ -148,25 +159,16 @@ p  = df %>%
   facet_wrap(~prolific_id) + 
   theme(legend.position = "none")
   
-ggsave(paste(PLOT.dir, "utterance-frequencies.png", sep=SEP),
+ggsave(paste(DATA$plot_dir, "utterance-frequencies.png", sep=fs),
        p, width=12, height=15)
-
-# color vision data
-pids.color <- data.color %>% group_by(prolific_id, id) %>%
-  filter(expected != response) %>%
-  pull(prolific_id)
-
-df %>% filter(prolific_id %in% pids.color)
 
 ```
 
 # Participants' slider rating for u in task 1 is 0 but u is produced in task 2
 
 ```{r}
-data.joint.orig %>%
+DATA$joint.orig %>%
   filter(!is.na(human_exp2) & human_exp1 == 0)
-
-
 ```
 
 

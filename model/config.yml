@@ -1,6 +1,5 @@
 default:
   dir_empiric: "./data/prolific/toy-blocks-pilot-2"
-  params_ll: "results-dirichlet-fits.csv"
   generate_utterances: false
   seed_tables: 202008
   save: true
@@ -31,28 +30,46 @@ tables_dirichlet:
   tables_mapping: "./model/data/mapping-tables-dirichlet-ids.rds"
   target_dir: "./model/results/tables-dirichlet"
   utts_path: "./model/data/utterances-dirichlet-tables.rds"
+  target_fits: "dirichlet-fits-params.csv"
+
+tables_dirichlet_filtered:
+  dir_empiric: "./data/prolific/toy-blocks-pilot-2/filtered_data"
+  tables_empiric: "./model/data/tables-dirichlet-filtered-empirical.rds"
+  tables_mapping: "./model/data/mapping-tables-dirichlet-filtered-ids.rds"
+  target_dir: "./model/results/tables-dirichlet-filtered"
+  utts_path: "./model/data/utterances-dirichlet-filtered-tables.rds"
+  target_fits: "dirichlet-fits-params.csv"
+
+tables_latent_mixture:
+  tables_empiric: ""
+  tables_mapping: ""
+  target_dir: "./model/results/tables-latent-mixture"
+  utts_path: "./model/data/utterances-latent-mixture-tables.rds"
+  fits_ind: "latent-mixture-fits-ind-params.csv"
+  fits_dep: "latent-mixture-fits-dep-params.csv"
 
 ## 2. Level configurations ##
 # @arg utt: - if set to "p_delta" or "p_rooij", respective value must be
 #           large (see in webppl file) for all states given to the speaker,
 #           - if set to "" no condition, just sampled from prior as usual
-speaker_empirical_tables:
+speaker:
   level_max: "speaker"
   utt: ""
-  target_fn: "results-speaker-empirical-tables.rds"
-  target_params: "params-speaker-empirical-tables.rds"
-  n_samples: 0 # bns sampled from prior
-  #bn_ids: !expr c(5)
+  target_fn: "results-speaker.rds"
+  target_params: "params-speaker.rds"
+
+
+speaker_empirical_tables:
+  inherits: speaker
+  n_samples: 0 # bns given by empirical tables
   predictions_for: "empirical-tables"
+  subdir: "table-based-predictions"
 
 speaker_prior_samples:
-  level_max: "speaker"
-  utt: ""
-  target_fn: "results-speaker-prior-samples-stimuli.rds"
-  target_params: "params-speaker-prior-samples-stimuli.rds"
+  inherits: speaker
   n_samples: 0 # bns sampled from prior
-  #bn_ids: !expr c(5)
   predictions_for: "prior-samples-stimuli"
+  subdir: "prior-samples-based-predictions"
 
 prior:
   level_max: "prior"

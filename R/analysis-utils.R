@@ -13,8 +13,6 @@ source(here("R", "utils-exp1.R"))
 source(here("R", "utils-exp2.R"))
 
 # General Data ------------------------------------------------------------
-exp.name = "toy-blocks-pilot-2"
-
 IDS.dep=c("if1_uh", "if1_u-Lh", "if1_hh", "if1_lh",
           "if2_ul", "if2_u-Ll", "if2_hl", "if2_ll");
 IDS.ind = c("independent_ll", "independent_hh", "independent_hl",
@@ -97,44 +95,6 @@ prior.dir_edges = tribble(~relation, ~condition, ~dir, ~event,
                           "if2", "ll", "horiz", "g_given_nb"
 )
 
-RESULT.dir = here("data", "prolific", exp.name)
-PLOT.dir = here("data", "prolific", exp.name, "plots")
-if(!dir.exists(PLOT.dir)){dir.create(PLOT.dir, recursive=TRUE)}
-
-# Experimental Data -------------------------------------------------------
-data <- readRDS(paste(RESULT.dir, fs, exp.name, "_tidy.rds", sep=""));
-data.info = data$info
-data.comments = data$comments
-data.color = data$color 
-data.attention = data$train.attention
-
-data.production = readRDS(paste(RESULT.dir, "human-exp2.rds", sep=fs));
-data.prior.smooth = readRDS(paste(RESULT.dir, "human-exp1-smoothed.rds", sep=fs))
-data.prior.orig = readRDS(paste(RESULT.dir, "human-exp1-orig.rds", sep=fs))
-data.joint.smooth = readRDS(paste(RESULT.dir, "human-exp1-smoothed-exp2.rds", sep=fs))
-data.joint.orig = readRDS(paste(RESULT.dir, "human-exp1-orig-exp2.rds", sep=fs))
-
-# data quality
-data.quality = readRDS(paste(RESULT.dir, fs, "test-data-prior-quality.rds", sep=""))
-quality.means = data.quality %>% arrange(desc(mean.comparator)) %>%
-  distinct_at(vars(c(comparator)), .keep_all = TRUE)
-worst_quality.ids = quality.means[1: round(0.1 * nrow(quality.means)),] %>% pull(comparator)
-
-# training data
-data.train.smooth = data$train.smooth
-data.train.orig = data$train.orig
-# for each participant only the last 50% of all train trials
-data.train.smooth.half = data.train.smooth %>% 
-  separate(id, into=c("trial.relation", "trial.idx"), sep=-1, remove=FALSE) %>%
-  group_by(prolific_id, trial.relation) %>% arrange(desc(trial_number)) %>%
-  top_frac(0.5, trial_number) %>% 
-  dplyr::select(-expected) %>% 
-  pivot_wider(names_from=question, values_from=response) %>%
-  ungroup() %>% 
-  dplyr::select(-trial.relation, -trial.idx)
-
-data.train.sliders = data$train.slider_choice
-
 # Other -------------------------------------------------------------------
 # ordered by informativity
 levels.responses = rev(c(
@@ -156,36 +116,62 @@ standardized.lit = c(standardized.sentences$only_b, standardized.sentences$only_
                       standardized.sentences$only_nb, standardized.sentences$only_ng)
 standardized.ifs = levels.responses[str_detect(levels.responses, "if")]
 
+# Experimental Data -------------------------------------------------------
+load_exp_data = function(exp.name, use_filtered){
+  data = list()
+  result_dir = here("data", "prolific", exp.name)
+  if(use_filtered) {
+    result_dir = paste(result_dir, "filtered_data", sep=fs)
+  }
+  data$plot_dir = paste(result_dir, "plots", sep=fs)
+  if(!dir.exists(data$plot_dir)){dir.create(data$plot_dir, recursive=TRUE)}
+  data$result_dir = result_dir
+  # Experimental Data
+  data$production = readRDS(paste(result_dir, "human-exp2.rds", sep=fs));
+  data$prior.smooth = readRDS(paste(result_dir, "human-exp1-smoothed.rds", sep=fs))
+  data$prior.orig = readRDS(paste(result_dir, "human-exp1-orig.rds", sep=fs))
+  data$joint.smooth = readRDS(paste(result_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
+  data$joint.orig = readRDS(paste(result_dir, "human-exp1-orig-exp2.rds", sep=fs))
+  data$info = readRDS(paste(result_dir, "participants-info.rds", sep=fs))
+  return(data)
+}
 
 # Filter Data ---------------------------------------------------------------
-exclude_data = function(ids){
+exclude_data = function(exp.name, ids){
+  data = load_exp_data(exp.name, use_filtered=FALSE)
   anti_by = c("prolific_id", "id")
-  exp2 = anti_join(data.production, ids, by=anti_by)
-  exp1_smoothed = anti_join(data.prior.smooth, ids, by=anti_by)
-  exp1_orig = anti_join(data.prior.orig, ids, by=anti_by)
-  exp1_smoothed_exp2 = anti_join(data.joint.smooth, ids, by=anti_by)
+  exp2 = anti_join(data$production, ids, by=anti_by)
+  exp1_smoothed = anti_join(data$prior.smooth, ids, by=anti_by)
+  exp1_orig = anti_join(data$prior.orig, ids, by=anti_by)
+  exp1_smoothed_exp2 = anti_join(data$joint.smooth, ids, by=anti_by)
+  exp1_orig_exp2 = anti_join(data$joint.orig, ids, by=anti_by)
   return(list(exp2=exp2, exp1_sm=exp1_smoothed, exp1_orig=exp1_orig,
-              exp1_sm_exp2=exp1_smoothed_exp2))
+              exp1_sm_exp2=exp1_smoothed_exp2, exp1_orig_exp2=exp1_orig_exp2))
 }
 
 # according to criteria filter out and save all filtered data separetely
 # @arg out.by_comments: tibble with cols: 'prolific_id', 'id'
-filter_data = function(out.by_comments=NA){
+filter_data = function(data.dir, exp.name, out.by_comments=NA){
+  data <- readRDS(paste(data.dir, fs, exp.name, "_tidy.rds", sep=""));
+  data.production = readRDS(paste(data.dir, "human-exp2.rds", sep=fs));
+  data.joint.orig = readRDS(paste(data.dir, "human-exp1-orig-exp2.rds", sep=fs))
+  data.train.sliders = data$train.slider_choice
+  
   df.all = data.production %>% dplyr::select(prolific_id, id)
   # exclude all trials of a participant
   # 1. attention check questions in beginning concerning block icons
-  df.att = data.attention %>% filter(response != expected) 
+  df.att = data$train.attention %>% filter(response != expected) 
   df.out = tibble()
-  if(nrow(df.att) != 0){
-    participants.att = df.att$prolific_id %>% unique()
-    df.att = df.all %>% filter(prolific_id %in% participants.att) %>%
-      dplyr::select(prolific_id, id) %>% distinct()
-    df.out = bind_rows(df.out, df.att)
-    message(paste(length(participants.att), 'participants completely excluded due
-                  to attention checks'))
-  }
+  # if(nrow(df.att) != 0){
+  #   participants.att = df.att$prolific_id %>% unique()
+  #   df.att = df.all %>% filter(prolific_id %in% participants.att) %>%
+  #     dplyr::select(prolific_id, id) %>% distinct()
+  #   df.out = bind_rows(df.out, df.att)
+  #   message(paste(length(participants.att),
+  #           'participants completely excluded due to attention checks'))
+  # }
   # 2. color vision questions
-  dat.col = data.color %>% filter(response != expected) %>%
+  dat.col = data$color %>% filter(response != expected) %>%
     dplyr::select(prolific_id, id) %>%
     group_by(prolific_id) %>%
     mutate(n_wrong=n()) %>% filter(n_wrong >= 1)
@@ -202,21 +188,21 @@ filter_data = function(out.by_comments=NA){
     mutate(correct = response == expected, .groups="drop_last") %>%
     group_by(prolific_id) %>%
     summarize(ratio_correct=sum(correct)/n(), .groups="drop_last") %>%
-    filter(ratio_correct < 0.5)
+    filter(ratio_correct < 0.6)
   if(nrow(dat.sliders) != 0){
     participants.sc = dat.sliders$prolific_id %>% unique()
     df.sc = df.all %>% filter(prolific_id %in% participants.sc) %>%
       dplyr::select(prolific_id, id) %>% distinct()
     df.out = bind_rows(df.out, df.sc)
     message(paste(length(participants.sc),
-            'participant(s) completely excluded due to less than 50% of slider-choice trials correct.'))
+                  'participant(s) completely excluded due to less than 60% of slider-choice trials correct.'))
   } 
   # single trials
   # 4. utterance task 2 is rated with 0 in task 1
   df.utt = data.joint.orig %>%
-    filter(!is.na(human_exp2) & human_exp1 == 0) %>%
+    filter(!is.na(human_exp2) & human_exp1 < 0.25) %>%
     dplyr::select(prolific_id, id) %>% distinct()
-  message(paste(nrow(df.utt), 'trial(s) excluded due to 0-probability in task 1'))
+  message(paste(nrow(df.utt), 'trial(s) excluded due to <0.25 probability in task 1'))
   df.out = bind_rows(df.out, df.utt)
   
   # 5. due to comments
@@ -227,22 +213,26 @@ filter_data = function(out.by_comments=NA){
   message(paste(ratio_ex, '% of all trials excluded in total.', sep=""))
   
   # save filtered data
-  df.filtered = exclude_data(df.out)
+  df.filtered = exclude_data(exp.name, df.out)
   # create dir for filtered data if filtered later
-  filtered_dir <- paste(RESULT.dir, "filtered_data", sep=fs)
+  filtered_dir <- paste(data.dir, "filtered_data", sep=fs)
   if(!dir.exists(filtered_dir)){dir.create(filtered_dir, recursive=TRUE);
   }
   save_data(df.filtered$exp2,
-    paste(filtered_dir, "human-exp2.rds", sep=fs));
+            paste(filtered_dir, "human-exp2.rds", sep=fs));
   save_data(df.filtered$exp1_sm,
-    paste(filtered_dir, "human-exp1-smoothed.rds", sep=fs))
+            paste(filtered_dir, "human-exp1-smoothed.rds", sep=fs))
   save_data(df.filtered$exp1_orig,
-    paste(filtered_dir, "human-exp1-orig.rds", sep=fs))
+            paste(filtered_dir, "human-exp1-orig.rds", sep=fs))
   save_data(df.filtered$exp1_sm_exp2,
-    paste(filtered_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
+            paste(filtered_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
+  save_data(df.filtered$exp1_orig_exp2,
+            paste(filtered_dir, "human-exp1-orig-exp2.rds", sep=fs))
+  
+  df.info = anti_join(data$info, df.out %>% dplyr::select(prolific_id), by=c("prolific_id"))
+  save_data(df.info, paste(filtered_dir, "participants-info.rds", sep=fs))
   
   # also save with all data (and with empiric-ids)
-  data = readRDS(paste(RESULT.dir, fs, exp.name, "_tidy.rds", sep=""));
   df1 = data$test %>% filter(str_detect(trial_name, "multiple_slider"))
   df1 = anti_join(df1, df.out, by=c("prolific_id", "id")) %>%
     dplyr::select(-response) %>% rename(response=r_orig)
@@ -252,4 +242,3 @@ filter_data = function(out.by_comments=NA){
   
   return(df.filtered)
 }
-

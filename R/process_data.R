@@ -87,6 +87,9 @@ joint.human.orig = left_join(
 save_data(joint.human.orig, paste(result_dir, "human-exp1-orig-exp2.rds", sep=fs))
 save_data(joint.human.smooth, paste(result_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
 
+# Participants info
+save_data(data$info, paste(result_dir, "participants-info.rds", sep=fs))
+
 # Quality of data in slider ratings:
 df = exp1.human.orig %>% rename(response=human_exp1) %>%
   dplyr::select(-utterance) %>% filter(!is.na(question))
@@ -94,7 +97,7 @@ prior.quality = distancesResponses(df)
 save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs))
 
 # generate theoretic model tables (as in paper) ---------------------------
-# tables.model = makeModelTables(result_dir)
+tables.model = makeModelTables(result_dir)
 
 # fit single dirichlet distribution for each stimulus ---------------------
 run_fit_dirichlet = function(result_dir, exp_name, fn_suffix=""){
@@ -144,8 +147,8 @@ run_fit_latent_mixture = function(result_dir, exp_name) {
 # p = plot_goodness_dirichlets(res.goodness, df.params.fit, result_dir)
 
 # todo
-params = list(ind=read_csv(paste(result_dir, "latent-mixture-fits-ind-params.csv", sep=fs)),
-              dep=read_csv(paste(result_dir, "latent-mixture-fits-dep-params.csv", sep=fs)))
+# params = list(ind=read_csv(paste(result_dir, "latent-mixture-fits-ind-params.csv", sep=fs)),
+#               dep=read_csv(paste(result_dir, "latent-mixture-fits-dep-params.csv", sep=fs)))
 # todo: implement funs
 # res.goodness = compute_goodness_latent_mixture(params, result_dir, N_participants, 100)
 # p = plot_goodness_latent_mixture(res.goodness, params, result_dir)

@@ -244,7 +244,7 @@ plotSliderRatingsAndUtts <- function(dat, target_dir){
   brks=seq(0, 1, by=0.1)
   for(pid in participants){
     df.pid = df %>% filter(prolific_id == (!! pid))
-    target = paste(target_dir, pid, sep=SEP)
+    target = paste(target_dir, pid, sep=fs)
     dir.create(target)
     for(stimulus in stimuli) {
       df.stim <- df.pid %>%
@@ -264,7 +264,6 @@ plotSliderRatingsAndUtts <- function(dat, target_dir){
           utt.face = case_when(utterance == uttered$utterance ~ "bold",
                                 TRUE ~ "plain"),
           utterance=factor(utterance, levels=levels.utt)) 
-        model=df.model %>% filter(stimulus_id==stimulus & prolific_id == pid & stimulus_id==cn)
         p <- df.stim %>%
           ggplot() +
           geom_bar(aes(y=utterance, x=human_exp1), stat="identity") +
@@ -277,11 +276,7 @@ plotSliderRatingsAndUtts <- function(dat, target_dir){
                 axis.text.y=element_text(color=df.stim$utt.col, face=df.stim$utt.face)) +
           labs(x="rated probability", y="response", title = stimulus)
         
-        if(nrow(model)!=0){
-          print()
-          p = p + geom_bar(data=model, aes(y=response, x=model.p), stat="identity", color='green')
-        }
-      ggsave(paste(target, paste(stimulus, "-", pid, ".png", sep=""), sep=SEP),
+      ggsave(paste(target, paste(stimulus, "-", pid, ".png", sep=""), sep=fs),
              p ,width=8, height=9)
     }
   }
@@ -431,7 +426,8 @@ join_model_behavioral_data = function(dat.speaker, params){
   return(data.human_model_each)
 }
 
-join_model_behavioral_avg_stimulus = function(speaker, params, fn_suffix) {
+join_model_behavioral_avg_stimulus = function(speaker, params) {
+  # model mean prediction per stimulus and utterance
   sp = speaker %>% group_by(stimulus, utterance) %>%
     summarize(p=mean(probs), .groups="drop_last") %>%
     rename(response=utterance) %>% translate_utterances() %>%
@@ -439,9 +435,11 @@ join_model_behavioral_avg_stimulus = function(speaker, params, fn_suffix) {
     add_column(predictor="model") %>%
     mutate(stimulus = as.factor(stimulus))
   
+  # average tables per stimulus
   tbls.avg = speaker %>% group_by(stimulus, utterance) %>% 
     summarize(mean.table=mean(model.table), .groups="keep")
   
+  # behavioral mean per stimulus and utterance
   behav.joint = readRDS(paste(params$dir_empiric,"human-exp1-smoothed-exp2.rds",
                               sep=.Platform$file.sep)) %>%
     group_by(id, utterance) %>%
@@ -452,14 +450,42 @@ join_model_behavioral_avg_stimulus = function(speaker, params, fn_suffix) {
   
   joint.avg = bind_rows(behav.joint, sp) %>% group_by(stimulus, predictor)
   joint = left_join(joint.avg, tbls.avg, by=c("stimulus", "utterance"))
-  fn =  paste("model-behavioral-avg-stimuli", fn_suffix, ".rds", sep="")
+  fn =  "model-behavioral-avg-stimuli.rds"
   if(params$save) {
     save_data(joint, paste(params$target_dir, fn, sep=.Platform$file.sep))
   }
   return(joint)
 }
 
+join_model_behavioral_avg_empirical_tables = function(
+  used_tables, res.behav_model, params
+) {
+  data = readRDS(here("model", "results", used_tables,
+                      "model-behavioral-across-table-ids.rds")) %>% ungroup() 
+  table.avg = data %>% rename(stimulus=id) %>% group_by(stimulus, utterance) %>%
+    summarize(mean.table=mean(human_exp1), .groups="drop_last")
+  model.avg = data %>%
+    dplyr::select(utterance, empirical_id, id, model.p) %>%
+    group_by(id, utterance) %>% rename(p=model.p, stimulus=id) %>%
+    summarize(p=mean(p), .groups="keep") %>%
+    add_column(predictor="model")
 
-
-
+  behav.avg = res.behav_model %>%
+    group_by(empirical_id, utterance) %>% 
+    dplyr::select(utterance, empirical_id, id, human_exp2) %>%
+    mutate(human_exp2 = case_when(is.na(human_exp2) ~ 0, 
+                                  TRUE ~ human_exp2)) %>% 
+    group_by(id, utterance) %>% rename(p=human_exp2, stimulus=id) %>%
+    summarize(p=mean(p), .groups="keep") %>%
+    add_column(predictor="behavioral")  
+  
+  joint.avg = bind_rows(model.avg, behav.avg)
+  result = left_join(joint.avg, table.avg, by=c("stimulus", "utterance"))
+  
+  fn =  "model-behavioral-avg-stimuli.rds"
+  if(params$save) {
+    save_data(result, paste(params$target_dir, fn, sep=.Platform$file.sep))
+  }
+  return(result)
+}
 

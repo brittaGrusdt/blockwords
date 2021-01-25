@@ -7,13 +7,17 @@ source(here("R", "utils.R"))
 source(here("R", "utils-exp2.R"))
 
 # used_tables = "tables_model"
-used_tables = "tables_dirichlet"
+# used_tables = "tables_dirichlet"
+used_tables = "tables_dirichlet_filtered"
 
 # params <- configure(c("speaker_empirical_tables", used_tables))
-params <- configure(c("speaker_prior_samples", "tables_dirichlet"))
+params <- configure(c("speaker_prior_samples", used_tables))
+
+
 # params <- configure(c("pl", used_tables))
 
 # Setup -------------------------------------------------------------------
+params$target_dir = paste(params$target_dir, params$subdir, sep=.Platform$file.sep)
 dir.create(params$target_dir, recursive = TRUE)
 params$target_params <- file.path(params$target_dir, params$target_params, fsep=.Platform$file.sep)
 
@@ -23,6 +27,7 @@ print(paste("tables read from:", params$tables_empiric))
 params$tables = tables %>% ungroup %>%
   dplyr::select(table_id, ps, vs, stimulus, "ll", "cn")
 
+# specify bayes nets for which speaker distributions will be computed
 if("predictions_for" %in% names(params)) {
   if(params$predictions_for == "empirical-tables") {
     params$bn_ids = tables %>% filter(!is.na(empirical_id)) %>% pull(table_id)
@@ -65,20 +70,17 @@ if(params$level_max == "speaker") {
             paste(params$target_dir, .Platform$file.sep,
                   "sample-ids-", params$target_fn, sep=""))
   
-  if(params$predictions_for == "empirical-tables") {
-    res.behav_model = join_model_behavioral_data(speaker, params);
-    sp = res.behav_model %>%
-      dplyr::select(prolific_id, id, utterance, model.p, model.table) %>%
-      rename(stimulus = id, probs=model.p)
-    res.behav_model.avg = join_model_behavioral_avg_stimulus(
-      sp, params, "_predictions-empirical-based")                                                       
-  } 
-  if(params$predictions_for == "prior-samples-stimuli" & 
-     used_tables == "tables-dirichlet") {
-    res.behav_model.avg = join_model_behavioral_avg_stimulus(
-      speaker, params, "_predictions-stimulus-prior-based")
+  res.behav_model = join_model_behavioral_data(speaker, params);
+  sp = res.behav_model %>%
+    dplyr::select(prolific_id, id, utterance, model.p, model.table) %>%
+    rename(stimulus = id, probs=model.p)
+  if(params$predictions_for == "prior-samples-stimuli") {
+    res.behav_model.avg = join_model_behavioral_avg_stimulus(sp, params)                                                       
+  } else if(params$predictions_for == "empirical-tables") {
+    res.behav_model.avg = join_model_behavioral_avg_empirical_tables(
+      str_replace_all(used_tables, "_", "-"), res.behav_model, params
+    )
   }
-
 } else if(params$level_max %in% c("priorN")){
     data <- structure_bns(posterior, params)
 } else if(params$level_max == "log_likelihood"){
