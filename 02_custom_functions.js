@@ -281,7 +281,7 @@ _checkSliderResponse = function (id, button2Toggle, test) {
   });
   // show values while moving slider
   $("#" + id).on("input", function(){
-    $("#output" + _.last(id)).val($("#" + id).val());
+    $("#output" + _.last(id)).val(parseInt($("#" + id).val()));
   });
 }
 
