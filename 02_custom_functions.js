@@ -276,6 +276,9 @@ _checkSliderResponse = function (id, button2Toggle, test) {
   $("#" + id).on("change", function(){
     _onChangeResponseFn(id, button2Toggle, col1, col2);
   });
+  $("#" + id).on("click", function(){
+    _onChangeResponseFn(id, button2Toggle, col1, col2);
+  });
   // show values while moving slider
   $("#" + id).on("input", function(){
     $("#output" + _.last(id)).val($("#" + id).val());
