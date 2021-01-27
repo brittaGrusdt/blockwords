@@ -360,9 +360,9 @@ for(idx in [0, 1, 3]){
   // opposite picture, (for both-or-none-probably-both/rather-none,
   // picture is slightly different, other two options have non-zero probability)
   ids_no.push(id)
-  let q = sc_questions2[idx][i].replace("thinks that", "is very confident that");
+  let q = sc_questions2[idx][i].replace("<b>thinks</b>", "<b>is very confident</b>");
   qs_no.push(q + "</b>") // but same question
-  let rc = sc_questions2[idx][i_wrong].replace("thinks that", "is very confident that")
+  let rc = sc_questions2[idx][i_wrong].replace("<b>thinks</b>", "<b>is very confident</b>")
   rc = rc.replace("yellow", "<i>YELLOW</i>")
   rc = rc.replace("red", "<i>RED</i>")
   correct_res.push("</br>" + rc)
