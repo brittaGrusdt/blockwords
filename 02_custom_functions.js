@@ -273,7 +273,7 @@ _onChangeResponseFn = function(id, button2Toggle, col1, col2){
 _checkSliderResponse = function (id, button2Toggle, test) {
   let col1 = test ? "blue" : "red";
   let col2 = test ? "green" : "yellow";
-  $("#" + id).on("click", function(){
+  $("#" + id).on("input", function(){
     _onChangeResponseFn(id, button2Toggle, col1, col2);
   });
 }
