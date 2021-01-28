@@ -11,6 +11,7 @@ library(greta)
 source(here("R", "utils.R"))
 source(here("R", "utils-exp1.R"))
 source(here("R", "utils-exp2.R"))
+source(here("R", "Dirichlet-fits.R"))
 
 # General Data ------------------------------------------------------------
 IDS.dep=c("if1_uh", "if1_u-Lh", "if1_hh", "if1_lh",
@@ -123,6 +124,8 @@ load_exp_data = function(exp.name, use_filtered){
   if(use_filtered) {
     result_dir = paste(result_dir, "filtered_data", sep=fs)
   }
+  m = ifelse(use_filtered, "filtered data loaded", "non-filtered data loaded")
+  message(paste(m, "from", result_dir))
   data$plot_dir = paste(result_dir, "plots", sep=fs)
   if(!dir.exists(data$plot_dir)){dir.create(data$plot_dir, recursive=TRUE)}
   data$result_dir = result_dir
@@ -151,7 +154,10 @@ exclude_data = function(exp.name, ids){
 
 # according to criteria filter out and save all filtered data separetely
 # @arg out.by_comments: tibble with cols: 'prolific_id', 'id'
-filter_data = function(data.dir, exp.name, out.by_comments=NA){
+filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA) {
+  filtered_dir <- paste(data.dir, "filtered_data", sep=fs)
+  if(!dir.exists(filtered_dir)){dir.create(filtered_dir, recursive=TRUE);
+  }
   data <- readRDS(paste(data.dir, fs, exp.name, "_tidy.rds", sep=""));
   data.production = readRDS(paste(data.dir, "human-exp2.rds", sep=fs));
   data.joint.orig = readRDS(paste(data.dir, "human-exp1-orig-exp2.rds", sep=fs))
@@ -162,14 +168,14 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA){
   # 1. attention check questions in beginning concerning block icons
   df.att = data$train.attention %>% filter(response != expected) 
   df.out = tibble()
-  # if(nrow(df.att) != 0){
-  #   participants.att = df.att$prolific_id %>% unique()
-  #   df.att = df.all %>% filter(prolific_id %in% participants.att) %>%
-  #     dplyr::select(prolific_id, id) %>% distinct()
-  #   df.out = bind_rows(df.out, df.att)
-  #   message(paste(length(participants.att),
-  #           'participants completely excluded due to attention checks'))
-  # }
+  if(nrow(df.att) != 0){
+    participants.att = df.att$prolific_id %>% unique()
+    df.att = df.all %>% filter(prolific_id %in% participants.att) %>%
+      dplyr::select(prolific_id, id) %>% distinct()
+    df.out = bind_rows(df.out, df.att)
+    message(paste(length(participants.att),
+            'participants completely excluded due to attention checks'))
+  }
   # 2. color vision questions
   dat.col = data$color %>% filter(response != expected) %>%
     dplyr::select(prolific_id, id) %>%
@@ -188,36 +194,74 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA){
     mutate(correct = response == expected, .groups="drop_last") %>%
     group_by(prolific_id) %>%
     summarize(ratio_correct=sum(correct)/n(), .groups="drop_last") %>%
-    filter(ratio_correct < 0.6)
+    filter(ratio_correct < 0.5)
   if(nrow(dat.sliders) != 0){
     participants.sc = dat.sliders$prolific_id %>% unique()
     df.sc = df.all %>% filter(prolific_id %in% participants.sc) %>%
       dplyr::select(prolific_id, id) %>% distinct()
     df.out = bind_rows(df.out, df.sc)
     message(paste(length(participants.sc),
-                  'participant(s) completely excluded due to less than 60% of slider-choice trials correct.'))
+                  'participant(s) completely excluded due to less than 50% of slider-choice trials correct.'))
   } 
   # single trials
   # 4. utterance task 2 is rated with 0 in task 1
   df.utt = data.joint.orig %>%
-    filter(!is.na(human_exp2) & human_exp1 < 0.25) %>%
+    filter(!is.na(human_exp2) & human_exp1 == 0) %>%
     dplyr::select(prolific_id, id) %>% distinct()
-  message(paste(nrow(df.utt), 'trial(s) excluded due to <0.25 probability in task 1'))
+  message(paste(nrow(df.utt), 'trial(s) excluded due to 0 probability in task 1, but chosen in task 2'))
   df.out = bind_rows(df.out, df.utt)
   
   # 5. due to comments
   if(!is.na(out.by_comments)){
-    df.out = bind_rows(df.out, out.by_comments)
+    out.comments = read_csv(paste(data.dir, out.by_comments, sep=fs)) %>%
+      dplyr::select(prolific_id, id)
+    df.out = bind_rows(df.out, out.comments)
   }
+  # 6. participants who choose <= 3 different utterances AND whose total time
+  # spent was less than 20 minutes
+  df.production.means = data.production %>% filter(id != "ind2") %>%
+    dplyr::select(response, prolific_id, id) %>% 
+    group_by(prolific_id, response) %>% 
+    mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
+    arrange(desc(ratio)) %>% distinct() %>%
+    mutate(response=as.factor(response))
+  # add time spent
+  dat.info = readRDS(paste(data.dir, "participants-info.rds", sep=fs))
+  df = left_join(df.production.means,
+                 data$info %>% dplyr::select(prolific_id, timeSpent), 
+                 by=c("prolific_id")) %>% 
+    mutate(timeSpent=round(timeSpent, 2))
+  df.sum = df %>%
+    dplyr::select(response, prolific_id, timeSpent) %>% distinct() %>%
+    group_by(prolific_id) %>% mutate(n.utt=n()) %>%
+    dplyr::select(-response) %>% distinct()
+  # remove all trials for these participants
+  trials = df$id %>% unique() %>% as.character()
+  df.freq_time = df.sum %>% filter(n.utt <= 3 & timeSpent < 20) %>%
+    dplyr::select(prolific_id)
+  out.freq_time = df.freq_time %>%
+    add_column(id=rep(list(trials), nrow(df.freq_time))) %>%
+    unnest(c(id)) %>% group_by(prolific_id)
+  
+  df.out = bind_rows(df.out, out.freq_time)
+  message(paste(length(out.freq_time$prolific_id %>% unique),
+                'participant(s) excluded due to <= 3 different utterance AND < 20 minutes.'))
+  # 7. Quality
+  if(!is.na(out.by_quality)) {
+    out.qual = read_csv(paste(data.dir, "out_by_quality_time.csv", sep=fs)) %>%
+      dplyr::select(prolific_id, id)
+    message(paste(length(out.qual$prolific_id %>% unique),
+                  'participant(s) excluded due to large quality diff AND total time spent (very short/long).'))
+    df.out = bind_rows(df.out, out.qual)
+  }
+
   ratio_ex = round(nrow(df.out)/nrow(df.all), 2) * 100
   message(paste(ratio_ex, '% of all trials excluded in total.', sep=""))
+  write_csv(df.out, paste(filtered_dir, "ids_excluded.csv", sep=fs))
   
   # save filtered data
   df.filtered = exclude_data(exp.name, df.out)
-  # create dir for filtered data if filtered later
-  filtered_dir <- paste(data.dir, "filtered_data", sep=fs)
-  if(!dir.exists(filtered_dir)){dir.create(filtered_dir, recursive=TRUE);
-  }
+
   save_data(df.filtered$exp2,
             paste(filtered_dir, "human-exp2.rds", sep=fs));
   save_data(df.filtered$exp1_sm,
@@ -239,6 +283,12 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA){
   df1 = add_smoothed_exp1(df1);
   df1 = standardize_color_groups_exp1(df1)
   save_prob_tables(df1, filtered_dir, exp.name);
+  
+  # fit dirichlet distributions to filtered data
+  df.params.fit = run_fit_dirichlet(filtered_dir, exp.name, "dirichlet-filtered")
+  N_participants = df1$prolific_id %>% unique() %>% length()
+  res.goodness = compute_goodness_dirichlets(df.params.fit, filtered_dir, N_participants)
+  p = plot_goodness_dirichlets(res.goodness, df.params.fit, filtered_dir)
   
   return(df.filtered)
 }
