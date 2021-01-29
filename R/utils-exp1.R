@@ -172,6 +172,7 @@ distancesResponses = function(df.prior, save_as=NA){
   return(dist.sums)
 }
 
+#@arg df: wide
 log_likelihood = function(df, cn, par){
   if(cn == "A implies C"){
     df <- df %>% 
@@ -197,7 +198,7 @@ log_likelihood = function(df, cn, par){
                 dbeta(1-p_a_given_nc, par$neg1, par$neg2, log=TRUE) +
                 dbeta(p_c, par$marg1, par$marg2, log=TRUE),
              cn=cn)
-  } else if(cn=="A || C") {
+  } else if(cn=="A || C" || cn == "ind") {
     df <- df %>% 
       mutate(ll=dbeta(p_a, par$p_a1, par$p_a2, log=TRUE) +
                 dbeta(p_c, par$p_c1, par$p_c2, log=TRUE) +
@@ -207,6 +208,26 @@ log_likelihood = function(df, cn, par){
     stop(paste("likelihood not defined for cn:", cn))
   }
   return(df)
+}
+
+add_cn_probs = function(df.wide, cn){
+  if(cn == "dep"){
+    df.cn = df.wide %>%
+      compute_cond_prob("P(C|A)") %>% rename(p_c_given_a=p) %>%
+      compute_cond_prob("P(-C|A)") %>% rename(p_nc_given_a=p) %>%
+      compute_cond_prob("P(C|-A)") %>% rename(p_c_given_na=p) %>%
+      compute_cond_prob("P(-C|-A)") %>% rename(p_nc_given_na=p) %>% 
+      compute_cond_prob("P(A|C)") %>% rename(p_a_given_c=p) %>%
+      compute_cond_prob("P(-A|C)") %>% rename(p_na_given_c=p) %>%
+      compute_cond_prob("P(A|-C)") %>% rename(p_a_given_nc=p) %>%
+      compute_cond_prob("P(-A|-C)") %>% rename(p_na_given_nc=p) %>%  
+      mutate(p_a=AC+`A-C`, p_c=AC+`-AC`)
+  } else if(cn == "ind") {
+    df.cn = df.wide %>% mutate(p_a=AC+`A-C`, p_c=AC+`-AC`)
+  }else {
+    stop("not implemented")
+  }
+  return(df.cn)
 }
 
 formatParams4WebPPL = function(params){

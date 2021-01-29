@@ -4,6 +4,7 @@ library(here)
 library(MCMCpack)
 library(rwebppl)
 source(here("R", "utils.R"))
+source(here("R", "utils-exp1.R"))
 
 # Fit dirichlet distributions ---------------------------------------------
 get_optimal_alphas <- function(table_data, st_id) {
@@ -13,7 +14,7 @@ get_optimal_alphas <- function(table_data, st_id) {
     as.matrix()
   y <- prop.table(y + epsilon, 1)
   
-  alpha <- uniform(0,20, 4)
+  alpha <- uniform(0, 20, 4)
   
   distribution(y) <- dirichlet(t(alpha), n_realisations = nrow(y))
   
@@ -30,113 +31,7 @@ get_optimal_alphas <- function(table_data, st_id) {
     )
 }
 
-fitDirichlets = function(path_smoothed_tables, target_dir){
-  table_data <- read_csv(path_smoothed_tables) %>% arrange(id)
-  stimulus_id_list <- table_data %>% pull(id) %>% unique()
-  
-  results <- map_df(
-    stimulus_id_list,
-    function(s) {
-      print(s)
-      get_optimal_alphas(table_data, st_id = s)
-    }
-  )
-  return(results)
-}
-
-fitLatentMixture = function(path_smoothed_tables, target_dir){
-  table_data <- read_csv(path_smoothed_tables) %>% arrange(id) %>% 
-    dplyr::select(id, bg, b, g, none) %>% group_by(id) %>% 
-    rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none) %>% 
-    mutate(pa = AC + `A-C`, pna =`-AC` + `-A-C`, 
-           pc = AC + `-AC`, pnc =`A-C` + `-A-C`,
-           diff = AC - pa * pc,
-           pca = AC/pa, pcna = `-AC`/ pna, 
-           pac = AC/pc, panc = `A-C`/pnc,
-           pnca = `A-C`/pa, pncna = `-A-C`/ pna, 
-           pnac = `-AC`/pc, pnanc = `-A-C`/pnc, 
-           ) %>% dplyr::select(-pna, -pnc, -`AC`, -`A-C`, -`-AC`, -`-A-C`)
-  
-  stimulus_id_list <- table_data %>% pull(id) %>% unique()
-  
-  results <- map_df(stimulus_id_list,
-    function(s) {
-      print(s)
-      tbls.stim = table_data %>% filter(id == s)
-        posteriorSamples = 
-          webppl(program_file = here("model", "fit-latent-mixture.wppl"),
-                 data = list(tables=tbls.stim), data_var = "data")
-      
-        samples = posteriorSamples %>% as_tibble() %>% 
-          mutate(Parameter = as.character(Parameter)) %>%
-          group_by(Parameter)
-        
-        pp = samples %>% summarize(ev=mean(value), .groups="keep") %>% 
-          pivot_wider(names_from="Parameter", values_from="ev") %>%
-          add_column(id=(!! s))
-    return(pp)
-    }
-  )
-  return(results)
-}
-
-# sample tables from fitted distributions ---------------------------------
-
-get_dep_tables = function(df, cn){
-  if(cn=="A implies C"){
-    df = df %>% mutate(bg=pos*marg, b=(1-pos)*marg, g=neg*(1-marg), none=(1-neg)*(1-marg))
-  } else if(cn == "A implies -C"){
-    df = df %>% mutate(bg=(1-pos)*marg, b=pos*marg, g=(1-neg)*(1-marg), none=neg*(1-marg))
-  } else if(cn == "C implies A"){
-    df = df %>% mutate(bg=pos*marg, b=neg*(1-marg), g=(1-pos)*marg, none=(1-neg)*(1-marg))
-  } else if(cn == "C implies -A"){
-    df = df %>% mutate(bg=(1-pos)*marg, b=(1-neg)*(1-marg), g=pos*marg, none=neg*(1-marg))
-  }else {
-    stop(paste("unknown cn", cn))
-  }
-  return(df)
-}
-
-sample_latent_mixture <- function(params, n=2500){
-  set.seed(seed_fitted_tables)
-  ids = params$dep$id %>% unique()
-  cns = c(params$dep$cn %>% unique, params$ind$cn %>% unique)
-  samples = map_dfr(ids, function(stim){
-    par.ind = params$ind %>% filter(id == stim)
-    par.dep = params$dep %>% filter(id == stim)
-    # sample each causal net according to fitted marginal
-    cns <- sample(c(par.ind$cn, par.dep$cn), n, replace=TRUE,
-                  prob=c(par.ind$p_cn, par.dep$p_cn)) %>%
-      table() %>% as_tibble() %>% rename_all(~c("cn", "n"))
-    n.ind = cns %>% filter(cn == "ind") %>% pull(n)
-    ind.pa = rbeta(n.ind, par.ind$pa_a, par.ind$pa_b)
-    ind.pc = rbeta(n.ind, par.ind$pc_a, par.ind$pc_b)
-    ind.min = 1-(ind.pa+ind.pc)
-    ind.min[ind.min>0] = 0
-    ind.min[ind.min<0] = ind.min[ind.min<0] * -1
-    ind.joint = rtruncnorm(n.ind, a=ind.min, b=pmin(ind.pa, ind.pc),
-                           mean=par.ind$mu, sd=par.ind$sigma)
-    tables.ind = tibble(bg=ind.joint, pa=ind.pa, pc=ind.pc) %>%
-      mutate(b=pa-ind.joint, g=pc-ind.joint, none=1-bg-b-g) %>%
-      dplyr::select(bg, b, g, none) %>% add_column(cn="ind")
-      
-    tables.dep = map_dfr(cns %>% filter(cn!="ind") %>% pull(cn), function(cn){
-      par.cn = par.dep %>% filter(cn==(!! cn))
-      n.cn = cns %>% filter(cn == (!! cn)) %>% pull(n)
-      pos = rbeta(n.cn, par.cn$a, par.cn$b) 
-      neg = rbeta(n.cn, par.cn$b, par.cn$a) 
-      marg = rbeta(n.cn, par.cn$marg_a, par.cn$marg_b) 
-      vals = tibble(pos=pos, neg=neg, marg=marg) %>%
-        get_dep_tables(cn) %>% dplyr::select(bg, b, g, none) %>% 
-        add_column(cn=(!! cn))
-    })
-    tables = bind_rows(tables.ind, tables.dep) %>% add_column(stimulus=stim)
-    return(tables)
-  })
-  return(samples)
-}
-
-sample_dirichlet <- function(params, n=2500){
+sample_dirichlet <- function(params, n=1000){
   set.seed(seed_fitted_tables)
   tables = pmap_dfr(params, function(...){
      row = tibble(...) 
@@ -147,45 +42,79 @@ sample_dirichlet <- function(params, n=2500){
   return(tables %>% add_column(cn="cn1"))
 }
 
-# @arg fn: "latent-mixture", "dirichlet", "model-tables"
-format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn){
+makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augmented=FALSE) {
+  tables.dirichlet = sample_dirichlet(df.params.fit)
+  formatted.dirichlet = format_and_save_fitted_tables(
+    tables.dirichlet, df.params.fit, result_dir, fn_suffix, add_augmented
+  )
+  return(formatted.dirichlet)
+}
+
+# brings sampled tables into format for webppl model and if specified,
+# add augmemted tables to sampled tables 
+# @arg fn: dirichlet, dirichlet-filtered, model-tables, latent-mixture, latenet-mixture-filtered
+format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn, add_augmented=FALSE){
+  # table_ids are unique with respect to table, but not wrt stimulus, i.e.
+  # a single table_id may appear for different stimuli
   tables.generated =  tables.fit %>% 
     rename(`AC`=bg, `A-C`=b, `-AC`=g, `-A-C`=none) %>%
     mutate(`AC.round`=as.integer(round(AC, 2) * 100),
            `A-C.round`=as.integer(round(`A-C`, 2) * 100),
            `-AC.round`=as.integer(round(`-AC`, 2) * 100),
            `-A-C.round`=as.integer(round(`-A-C`, 2) * 100)) %>%
-    distinct_at(vars(c(ends_with(".round"))), .keep_all = TRUE) %>%
-    rowid_to_column("table_id")
-
-  tbls.emp.augmented = formatEmpiricTables(dir_empiric)
-  tbls.joint = left_join(tables.generated, tbls.emp.augmented,
-                         by=c("AC.round", "A-C.round", "-AC.round", "-A-C.round")) %>% 
-    mutate(empirical = !is.na(empirical_id)) %>% arrange(augmented)
-  tables.generated.all = formatGeneratedTables(tbls.joint)
-  save_as = paste("mapping-tables-", fn, "-ids.rds", sep="")
-  save_data(tables.generated.all, here("model", "data", save_as))
+    group_by(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`)
+  # all sampled tables retained but table_id should map to unique tables
+  tables.generated$table_id = tables.generated %>%
+    group_indices(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`)
   
+  if(add_augmented) {
+    tables.generated = add_augmented_to_sampled_tables(tables.generated, dir_empiric, fn)
+    fn = paste(fn, "-with-augmented", sep="")
+  }
   # save tables for input to webppl model (with likelihoods) ------------------
-  tables.model = tables.generated.all %>%
-    dplyr::select(-row_id, -ends_with(".round"), -augmented, -only_augmented)
-  
+  tables.model = tables.generated %>% ungroup %>% dplyr::select(-ends_with(".round"))
   if(startsWith(fn, "dirichlet")){
-    tbls = tables.model %>% group_by(stimulus) %>% 
-      rename(bg=AC, b=`A-C`, g=`-AC`, none=`-A-C`) %>%
-      dplyr::select(stimulus, table_id, bg, b, g, none)
+    tbls = tables.model %>% group_by(stimulus)
     tables.ll = group_map(tbls, function(df, stim){
       stimulus = stim$stimulus
-      tbls.model = tables.model %>% filter(table_id %in% df$table_id)
       par = params.fit %>% filter(id == (!! stimulus))
-      ll = add_ll_dirichlet(df %>% dplyr::select(-table_id), par)
-      tbls.model %>% add_column(ll=ll$`ll.table`)
+      ll = add_ll_dirichlet(df %>% dplyr::select(AC, `A-C`, `-AC`, `-A-C`), par)
+      df %>% add_column(ll=ll$`ll.table`, stimulus=(!! stimulus))
     })
-    tables.toWPPL = bind_rows(tables.ll) %>% group_by(table_id) %>% 
+    tables.toWPPL = bind_rows(tables.ll) %>%
+      rowid_to_column() %>% group_by(rowid) %>% 
       mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
-             ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) 
-  } else if(startsWith(fn, "latent-mixture")){
-    # tables.toWPPL = 
+             ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
+      ungroup() %>% dplyr::select(-rowid)
+    
+  } else if(startsWith(fn, "latent-mixture")) {
+    tbls = tables.model %>% group_by(stimulus) %>% 
+      dplyr::select(stimulus, table_id, cn, AC, `A-C`, `-AC`, `-A-C`)
+    
+    # add log likelihood
+    tables.ll = group_map(tbls, function(df, stim){
+      # tbls.model = tbls %>% filter(table_id %in% df$table_id)
+      par = list()
+      par$dep = params.fit$dep %>% filter(id == (!! stim$stimulus))
+      par$ind = params.fit$ind %>% filter(id== (!! stim$stimulus))
+      df.cn_dep = add_cn_probs(df %>% filter(cn != "ind"), "dep")
+      df.cn_ind = add_cn_probs(df %>% filter(cn=="ind"), "ind")
+      par$ind = par$ind %>%
+        rename(p_diff_sd=sigma, p_a1=pa_a, p_a2=pa_b, p_c1=pc_a, p_c2=pc_b)
+      par$dep = par$dep %>%
+        rename(pos1=a, pos2=b, marg1=marg_a, marg2=marg_b) %>%
+        mutate(neg1=pos2, neg2=pos1)
+      
+      ll.ind = add_ll_latent(df.cn_ind, par$ind)
+      ll.dep = add_ll_latent(df.cn_dep, par$dep)
+      bind_rows(ll.ind, ll.dep)
+    })
+    tables.toWPPL = bind_rows(tables.ll) %>% 
+      rowid_to_column() %>% group_by(rowid) %>% 
+      mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
+             ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
+      dplyr::select(-rowid)
+    
   } else if(fn=="model-tables") {
     indep_sigma <- configure(c("model_tables"))$indep_sigma
     tables = tables.model %>% 
@@ -201,12 +130,10 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
   else {
     stop("arg 'fn' must be one of: latent-mixture, dirichlet")
   }
-  save_as = paste("tables-", fn, "-empirical.rds", sep="")
+  save_as = paste("tables-", fn, "-toWPPL.rds", sep="")
   tables.toWPPL %>% save_data(here("model", "data", save_as))
-  # likelihood and cns is not important for analysis, so return without ll
-  return(tables.generated.all)
+  return(tables.toWPPL)
 }
-
 
 # Log likelihoods ---------------------------------------------------------
 # adds log likelihood for each table for stimulus it was generated for 
@@ -236,6 +163,44 @@ ll_dirichlet = function(tables, params){
   df = likelihoods %>% summarize(ll=sum(ll.table))
   return(df)
 }
+
+# fit single dirichlet distribution for each stimulus ---------------------
+# @arg fn_suffix: "dirichlet", "dirichlet-filtered"
+run_fit_dirichlet = function(result_dir, exp_name, fn_suffix){
+  path_smoothed_tables <- paste(result_dir, fs, exp_name, "_tables_smooth.csv", sep="")
+  table_data <- read_csv(path_smoothed_tables) %>% arrange(id)
+  message(paste('load data for fitting dirichlets from', path_smoothed_tables))
+  
+  stimulus_id_list <- table_data %>% pull(id) %>% unique()
+  params.fit <- map_df(
+    stimulus_id_list,
+    function(s) {
+      print(s)
+      get_optimal_alphas(table_data, st_id = s)
+    }
+  )
+  save_to = paste("params-fitted-", fn_suffix, ".csv", sep="")
+  write_csv(params.fit, paste(result_dir, save_to, sep=fs))
+  df.params.fit = params.fit %>% add_column(p_cn=1, cn="cn1")
+  return(df.params.fit)
+}
+
+# plot fitted dirichlet
+plot_dirichlet = function(df.params.fit){
+  samples = map_dfr(seq(1, nrow(df.params.fit)), function(i){
+    par = df.params.fit[i,]
+    par.vec = par %>% dplyr::select(-id, -p_cn, -cn) %>% as.matrix()
+    rdirichlet(5000, par.vec) %>% as_tibble() %>% add_column(id=par$id)
+  }) %>% 
+    rename(bg=V1, b=V2, g=V3, none=V4)
+  
+  p = samples %>%
+    pivot_longer(cols=c(bg, b, g, none), names_to="cell", values_to="p") %>% 
+    ggplot(aes(x=p, color=id)) + geom_density() + facet_grid(cell~id, scales="free") +
+    ggtitle(df.params.fit[i,]$id) + theme(legend.position="none")
+  print(p)
+}
+
 
 # Goodness fits -----------------------------------------------------------
 # considers different causal nets, i.e. more than 1 dirichlet per stimulus
@@ -284,9 +249,10 @@ goodness_fits_dirichlet = function(params, dir_empiric, n, N){
   return(bind_rows(ll_samples))
 }
 
-compute_goodness_dirichlets = function(params, dir_empiric, N, n=10**4){
+compute_goodness_dirichlets = function(params, dir_empiric, N, n=10**2){
   res.goodness = goodness_fits_dirichlet(params, dir_empiric, n, N) %>% arrange(desc(p.val));
-  p.vals = res.goodness %>% dplyr::select(-ll_sample) %>% distinct()
+  p.vals = res.goodness %>% dplyr::select(-ll_sample) %>% distinct() %>% 
+    mutate(p.val=round(p.val, 3))
   write_csv(p.vals, paste(dir_empiric, "simulated-p-values-fitted-dirichlet.csv", sep=fs))
   return(res.goodness)
 }

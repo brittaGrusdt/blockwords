@@ -7,13 +7,14 @@ source("R/Dirichlet-fits.R")
 
 # Setup -------------------------------------------------------------------
 # debug = TRUE test run vs. experimental (prolific) run
-debug = FALSE 
-exp_name = "toy-blocks-pilot-2"
+debug = FALSE
+# exp_name = "toy-blocks-pilot-2"
+exp_name = "blockwords"
 
-data_fn <- paste("results_50_", exp_name, "_BG.csv", sep="")
-# data_fn <- paste("results_54_", exp_name, "-main_BG.csv", sep="")
+# data_fn <- paste("results_50_", exp_name, "_BG.csv", sep="")
+data_fn <- paste("results_54_", exp_name, "-main_BG.csv", sep="")
 
-N_participants = 30
+N_participants = 100
 N_trials = list(train=14+3+10, test=13*2+1, color_vision=6,
                 slider_choice=10, attention_check=3);
 
@@ -26,7 +27,6 @@ filtered_dir = paste(result_dir, "filtered_data", sep=.Platform$file.sep)
 if(!dir.exists(filtered_dir)){
   dir.create(filtered_dir)
 }  
-
 
 # Processing --------------------------------------------------------------
 data <- process_data(data_dir, data_fn, result_dir, exp_name, debug, N_trials)
@@ -73,6 +73,11 @@ exp2.human = test.production %>%
 save_data(exp2.human %>% rename(response=utterance),
         paste(result_dir, "human-exp2.rds", sep=fs))
 
+# save average per stimulus
+human.exp2.avg = task2_avg_per_stimulus(result_dir)
+saveRDS(human.exp2.avg, paste(result_dir, "behavioral-avg-task2.rds", sep=fs))
+write_csv(human.exp2.avg, paste(result_dir, "behavioral-avg-task2.csv", sep=fs))
+
 # merge data from prior elicitation and production
 joint.human.smooth = left_join(
   exp1.human.smooth %>% dplyr::select(-question, -RT),
@@ -96,63 +101,20 @@ df = exp1.human.orig %>% rename(response=human_exp1) %>%
 prior.quality = distancesResponses(df)
 save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs))
 
+
+# look at comments/time/quality and specify in results_joint_experiment.Rmd
+# participants to be excluded
+# source(here("R", "analysis-utils.R"))
+# df.filtered = filter_data(result_dir, exp_name, "out_by_comments.csv", "out_by_quality_time.csv")
+
+
 # generate theoretic model tables (as in paper) ---------------------------
 tables.model = makeModelTables(result_dir)
 
-# fit single dirichlet distribution for each stimulus ---------------------
-run_fit_dirichlet = function(result_dir, exp_name, fn_suffix=""){
-  path_tables <- paste(result_dir, fs, exp_name, "_tables_smooth.csv", sep="")
-  params.fit = fitDirichlets(path_tables, target_dir=result_dir)
-  write_csv(params.fit, paste(result_dir, "dirichlet-fits-params.csv", sep=fs))
-
-  tables.dirichlet = sample_dirichlet(params.fit)
-
-  df.params.fit = params.fit %>% add_column(p_cn=1, cn="cn1")
-  fn = paste("dirichlet", fn_suffix, sep="")
-  formatted.dirichlet = format_and_save_fitted_tables(
-    tables.dirichlet, df.params.fit, result_dir, fn
-  )
-  return(df.params.fit)
-}
-
-# fit latent mixture distributions for each stimulus ----------------------
-run_fit_latent_mixture = function(result_dir, exp_name) {
-  path_tables <- paste(result_dir, fs, exp_name, "_tables_smooth.csv", sep="")
-  params.fit = fitLatentMixture(path_tables, target_dir=result_dir)
-  cns = c("A implies C", "A implies -C", "C implies A", "C implies -A")
-  params.dep =  map_dfr(cns, function(cn){
-    df = params.fit %>% dplyr::select(c(starts_with(cn), id)) %>% 
-      rename_at(.vars = vars(starts_with(cn)), 
-                .funs = funs(str_replace(., paste(cn, ".", sep=""), ""))) %>% 
-      add_column(cn=(!! cn))
-    return(df)
-  })
-  # independent params
-  params.ind = params.fit %>% dplyr::select(c(starts_with("ind"), id)) %>%
-    rename_at(.vars = vars(starts_with("ind")), 
-              .funs = funs(str_replace(., "ind.", ""))) %>% 
-    add_column(cn="ind")
-  params = list(ind=params.ind, dep=params.dep)
-  write_csv(params$ind, paste(result_dir, "latent-mixture-fits-ind-params.csv", sep=fs))
-  write_csv(params$dep, paste(result_dir, "latent-mixture-fits-dep-params.csv", sep=fs))
-  # todo implement following funs
-  tables.latent_mixture = sample_latent_mixture(params)
-  formatted.lm = format_and_save_fitted_tables(tables.latent_mixture, result_dir, "latent-mixture")
-  return(params)
-}
-
-
-# goodness fits -----------------------------------------------------------
-# res.goodness = compute_goodness_dirichlets(df.params.fit, result_dir, N_participants)
-# p = plot_goodness_dirichlets(res.goodness, df.params.fit, result_dir)
-
-# todo
-# params = list(ind=read_csv(paste(result_dir, "latent-mixture-fits-ind-params.csv", sep=fs)),
-#               dep=read_csv(paste(result_dir, "latent-mixture-fits-dep-params.csv", sep=fs)))
-# todo: implement funs
+# todo: implement latent mixture
+# df.params.fit = run_fit_latent_mixture(result_dir, exp_name, "cns")
 # res.goodness = compute_goodness_latent_mixture(params, result_dir, N_participants, 100)
 # p = plot_goodness_latent_mixture(res.goodness, params, result_dir)
-
 
 
 

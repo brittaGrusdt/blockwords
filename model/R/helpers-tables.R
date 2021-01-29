@@ -97,18 +97,18 @@ create_tables <- function(params){
   
   tables = tables_to_bns(tables, params)
   if(params$save) {
-    tables %>% save_data(params$tables_path)
-    params %>% save_data(params$target_params)
+    tables %>% save_data(here(params$tables_path))
+    params %>% save_data(here(params$target_params))
   }
   return(tables)
 }
 
 # @arg tables: one column per loglikelihood
 tables_to_bns = function(tables, params){
-  tables.ll = tables %>% pivot_longer(cols=starts_with("logL_"), names_to="ll_cn", "ll")
+  tables.ll = tables %>% pivot_longer(cols=starts_with("logL_"), names_to="ll_cn", values_to="ll")
   for(i in seq(1, params$cns %>% length() - params$n_best_cns)){
-    tables.ll = tables.ll %>% mutate(worst_ll=min(value)) %>%
-      filter(value!=worst_ll) %>% dplyr::select(-worst_ll)
+    tables.ll = tables.ll %>% mutate(worst_ll=min(ll)) %>%
+      filter(ll!=worst_ll) %>% dplyr::select(-worst_ll)
   }
   tbls = tables.ll  %>%
     mutate(cn=case_when(ll_cn=="logL_ind" ~ "A || C",
@@ -116,7 +116,7 @@ tables_to_bns = function(tables, params){
                         ll_cn=="logL_if_ca" ~ "C implies A",
                         ll_cn=="logL_if_anc" ~ "A implies -C",
                         ll_cn=="logL_if_cna" ~ "C implies -A")) %>%
-    rename(ll=value) %>% dplyr::select(-ll_cn, -ind.lower, -ind.upper) 
+    dplyr::select(-ll_cn, -ind.lower, -ind.upper) 
   return(tbls)
 }
 
@@ -213,7 +213,9 @@ plot_tables_all_cns <- function(tables_path, plot_dir, w, h){
 analyze_tables <- function(path, theta, TABLES=tibble()){
   if(TABLES %>% nrow() == 0) {
     TABLES <- read_rds(path) %>%
-      dplyr::select(id, cn, vs, ps) %>% unnest(c(ps, vs)) %>% group_by(id)
+      dplyr::select(table_id, cn, vs, ps)  %>% 
+      rowid_to_column() %>% group_by(rowid) %>%
+      unnest(c(ps, vs))
   }    
   TABLES.wide <-  TABLES %>% pivot_wider(names_from = vs, values_from = ps)  
     # TABLES.wide %>% filter(AC > 0.82 & `A-C` <0.0085 & `-AC`<0.11 & `-A-C` < 0.07 &

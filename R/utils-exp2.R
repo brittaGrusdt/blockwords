@@ -316,21 +316,70 @@ plotRatingsAndModel <- function(df, target_dir){
   }
 }
 
-best_utt = function(model){
-  df = model %>% mutate(m=max(probs)) %>%
-    filter(m==probs) %>% dplyr::select(-m) %>% distinct()
-  return(df %>% rename(model=response))
+# computes counts of utterances per stimulus and corresponding ratio
+task2_avg_per_stimulus = function(result_dir){
+  behavioral = readRDS(paste(result_dir, "human-exp1-smoothed-exp2.rds", sep=fs))
+  behav.n_per_stim = behavioral %>% dplyr::select(prolific_id, id) %>% 
+    distinct() %>% group_by(id) %>% summarize(N=n(), .groups="drop_last")
+  
+  behav.count = behavioral %>%
+    ungroup() %>% dplyr::select(-human_exp1, -prolific_id) %>%
+    mutate(human_exp2 = case_when(is.na(human_exp2) ~ 0, 
+                                  TRUE ~ 1)) %>%
+    group_by(id, utterance) %>%
+    summarize(count = sum(human_exp2), .groups="drop_last")
+  
+  behav.avg = left_join(behav.n_per_stim, behav.count, by="id") %>%
+    mutate(ratio=count/N)
+  return(behav.avg)
 }
 
+# across stimuli
+average_predictions = function(dat.speaker, params, target_fn){
+  # table_id can occur for different stimuli, model predictions were done only
+  # based on table as stimulus doesnt have an influence on it!
+  bn_samples = params$bns_sampled %>% group_by(table_id, stimulus) %>%
+    mutate(stimulus=list(rep(stimulus, n))) %>% dplyr::select(-n)
+  df = dat.speaker %>% ungroup() %>% dplyr::select(cn, table_id, utterance, probs)
+  df.model = left_join(
+    df %>% group_by(table_id), 
+    bn_samples,
+    by=c("table_id")
+  )
+  df.bn_samples = df.model %>%
+    group_by(table_id) %>% 
+    pivot_wider(names_from="utterance", values_from="probs", names_prefix="utt.") %>%
+    unnest(c(stimulus)) %>% 
+    pivot_longer(cols=starts_with("utt."), names_to="response",
+                 names_prefix="utt.",values_to="probs")
+  df.n_stim = df.bn_samples %>% group_by(stimulus) %>% summarize(n.stim=n()/20, .groups="drop_last")
+  model.avg.bn_samples = df.bn_samples %>% 
+    group_by(stimulus, response) %>% 
+    summarize(p=mean(probs), .groups="drop_last") %>%
+    translate_utterances() %>% 
+    add_column(predictor="model") %>%
+    rename(utterance=response) %>%
+    group_by(stimulus) %>% mutate(best.utt=p==max(p))
+  
+  # add nb of stimuli that were included in average
+  model.avg = left_join(model.avg.bn_samples, df.n_stim, by="stimulus")
+  
+  save_data(model.avg, paste(params$target_dir, fs, target_fn, ".rds", sep=""))
+  write_csv(model.avg, paste(params$target_dir, fs, target_fn, ".csv", sep=""))
+  return(model.avg)
+}
+
+# put model prediction for particular table_id/empirical_ids together with
+# corresponding behavioral observations, for states where both exist
 join_model_behavioral_data = function(dat.speaker, params){
-  # 1. Model data correctly mapped to empirical tables
+  # 1. Map Model data to empirical tables
+  # model only predicts speaker once per table_id! (indep.of stimulus/cn)
   data.model <- dat.speaker %>%
     group_by(table_id, cn) %>%
     dplyr::select(table_id, cn, stimulus, AC, `A-C`, `-AC`, `-A-C`,
                   utterance, probs)
   
-  tables.empiric = readRDS(paste(params$dir_empiric, "tables-empiric-pids.rds",
-                                 sep=.Platform$file.sep))
+  tables.empiric = readRDS(paste(params$dir_empiric, "tables-empiric-pids.rds", sep=fs))
   pids = tables.empiric %>% ungroup() %>%
     dplyr::select(-bg, -b, -g, -none, -ends_with(".round")) %>% unnest(c(p_id))
   
@@ -359,133 +408,53 @@ join_model_behavioral_data = function(dat.speaker, params){
     return(dat)
   });
   predictions = data.model %>% ungroup() %>% 
-    dplyr::select(-AC, -`A-C`, -`-AC`, -`-A-C`, -stimulus, -cn) %>%
+    dplyr::select(-AC, -`A-C`, -`-AC`, -`-A-C`, -cn) %>%
     group_by(table_id)
-  ids = left_join(mapping, pids) %>% group_by(empirical_id)
-
-  res.model = left_join(predictions, ids, by=c("table_id")) %>%
+  # model predictions may contain predictions for tables that no participant had actually used!
+  # (empirical_id is NA)
+  res.model = left_join(predictions, mapping, by="table_id") %>% 
     group_by(empirical_id) %>%
     rename(response=utterance) %>%
     translate_utterances() %>% group_by(empirical_id)
 
-  # 2. behavioral data
-  # add empirical-ids to behavioral data (based on prolific_id + id)
-  emp_ids = ids %>% dplyr::select(empirical_id, p_id) %>% distinct() %>%
+  # merge empirical data with model predictions for states we have observations
+  # and model predictions for
+  # add data which participant used which empirical id in which trial
+  ids = left_join(pids, mapping, by="empirical_id") %>% group_by(empirical_id) %>%
     separate(p_id, into=c("prolific_id", "stimulus", "prior"), sep="_") %>%
     unite("id", c(stimulus, prior), sep="_")
-  
+
   data.joint = readRDS(paste(params$dir_empiric, "human-exp1-smoothed-exp2.rds",
                              sep=.Platform$file.sep))
-  res.behavioral = left_join(data.joint, emp_ids, by=c("prolific_id", "id")) %>%
-    filter(!is.na(empirical_id)) %>% group_by(empirical_id)
-
-  # 3. merge empirical data with model data
-  # 3.1 average across table_ids that map to same empirical id to get one
-  # model prediction for each empirical id
-  res.per_empirical.model = res.model %>%
-    group_by(empirical_id, response) %>%
-    summarize(probs=mean(probs), .groups="drop_last") %>%
-    rename(utterance=response, model.p=probs)
+  res.behavioral = left_join(data.joint, ids, by=c("prolific_id", "id")) %>%
+    group_by(prolific_id, id) 
   
-  data.human_model_across = left_join(res.behavioral, res.per_empirical.model,
-                                      by=c("empirical_id", "utterance")) %>% 
-    group_by(empirical_id, prolific_id, id)
-  save_data(data.human_model_across,
-            paste(params$target_dir, "model-behavioral-across-table-ids.rds",
-                  sep=.Platform$file.sep))
-  
-  # 3.2 each table_id seperately, i.e. more than one prediction per empirical id
-  # mark original tables s.t. they can be highlighted in plots!
   orig.ids = orig.tables$table_id
-  human_model_each = left_join(
-    res.behavioral, res.model %>% rename(utterance=response, model.p=probs),
-    by=c("empirical_id", "utterance")
-  ) %>% group_by(empirical_id, prolific_id, id, table_id, p_id) %>%
+  behav_model = left_join(
+    res.behavioral %>% filter(!is.na(table_id)),
+    res.model %>% rename(utterance=response, model.p=probs) %>% filter(!is.na(empirical_id)),
+    by=c("table_id", "empirical_id", "utterance")
+  ) %>% group_by(prolific_id, id, table_id) %>%
     mutate(orig.table=case_when(table_id %in% orig.ids ~ TRUE,
-                                TRUE ~ FALSE)) %>%
-    ungroup() %>%  dplyr::select(-p_id) %>% distinct()
-  
-  model.tables = mapping.ids %>%
+                                TRUE ~ FALSE))
+  # compute utterance probabilities, only needed for empirical tables (in plots)
+  model.tables = mapping.ids %>% filter(!is.na(empirical_id)) %>% 
     dplyr::select(table_id, empirical_id, AC, `A-C`, `-AC`, `-A-C`) %>%
     rename(bg=AC, b=`A-C`, g=`-AC`, none=`-A-C`) %>% add_probs() %>% 
     group_by(table_id) %>% 
     pivot_longer(cols=c(bg, b, g, none, starts_with("p_")),
                  names_to="utterance", values_to="response") %>%
     rename(prob=utterance) %>% translate_probs_to_utts() %>% 
-    rename(`model.table`= response) %>% dplyr::select(-prob, -empirical_id)
+    rename(`model.table`= response) %>% dplyr::select(-prob)
     
-  data.human_model_each = left_join(
-    human_model_each, model.tables,
-    by=c("table_id", "utterance")
-  )
+  # data.behav_model = left_join(
+  #   behav_model, model.tables,
+  #   by=c("table_id", "empirical_id", "utterance")
+  # )
   if(params$save) {
-    save_data(data.human_model_each,
-              paste(params$target_dir, "model-behavioral-each-table-id.rds",
+    save_data(behav_model,
+              paste(params$target_dir, "model-behavioral-predictions.rds",
                     sep=.Platform$file.sep))
   }
-  return(data.human_model_each)
+  return(data.behav_model)
 }
-
-join_model_behavioral_avg_stimulus = function(speaker, params) {
-  # model mean prediction per stimulus and utterance
-  sp = speaker %>% group_by(stimulus, utterance) %>%
-    summarize(p=mean(probs), .groups="drop_last") %>%
-    rename(response=utterance) %>% translate_utterances() %>%
-    rename(utterance=response) %>%
-    add_column(predictor="model") %>%
-    mutate(stimulus = as.factor(stimulus))
-  
-  # average tables per stimulus
-  tbls.avg = speaker %>% group_by(stimulus, utterance) %>% 
-    summarize(mean.table=mean(model.table), .groups="keep")
-  
-  # behavioral mean per stimulus and utterance
-  behav.joint = readRDS(paste(params$dir_empiric,"human-exp1-smoothed-exp2.rds",
-                              sep=.Platform$file.sep)) %>%
-    group_by(id, utterance) %>%
-    mutate(human_exp2 = case_when(is.na(human_exp2) ~ 0,
-                                  TRUE ~ 1)) %>%
-    summarize(p = mean(human_exp2), .groups="drop_last") %>%
-    rename(stimulus=id) %>% add_column(predictor="behavioral")
-  
-  joint.avg = bind_rows(behav.joint, sp) %>% group_by(stimulus, predictor)
-  joint = left_join(joint.avg, tbls.avg, by=c("stimulus", "utterance"))
-  fn =  "model-behavioral-avg-stimuli.rds"
-  if(params$save) {
-    save_data(joint, paste(params$target_dir, fn, sep=.Platform$file.sep))
-  }
-  return(joint)
-}
-
-join_model_behavioral_avg_empirical_tables = function(
-  used_tables, res.behav_model, params
-) {
-  data = readRDS(here("model", "results", used_tables,
-                      "model-behavioral-across-table-ids.rds")) %>% ungroup() 
-  table.avg = data %>% rename(stimulus=id) %>% group_by(stimulus, utterance) %>%
-    summarize(mean.table=mean(human_exp1), .groups="drop_last")
-  model.avg = data %>%
-    dplyr::select(utterance, empirical_id, id, model.p) %>%
-    group_by(id, utterance) %>% rename(p=model.p, stimulus=id) %>%
-    summarize(p=mean(p), .groups="keep") %>%
-    add_column(predictor="model")
-
-  behav.avg = res.behav_model %>%
-    group_by(empirical_id, utterance) %>% 
-    dplyr::select(utterance, empirical_id, id, human_exp2) %>%
-    mutate(human_exp2 = case_when(is.na(human_exp2) ~ 0, 
-                                  TRUE ~ human_exp2)) %>% 
-    group_by(id, utterance) %>% rename(p=human_exp2, stimulus=id) %>%
-    summarize(p=mean(p), .groups="keep") %>%
-    add_column(predictor="behavioral")  
-  
-  joint.avg = bind_rows(model.avg, behav.avg)
-  result = left_join(joint.avg, table.avg, by=c("stimulus", "utterance"))
-  
-  fn =  "model-behavioral-avg-stimuli.rds"
-  if(params$save) {
-    save_data(result, paste(params$target_dir, fn, sep=.Platform$file.sep))
-  }
-  return(result)
-}
-

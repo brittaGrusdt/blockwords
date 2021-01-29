@@ -262,6 +262,7 @@ add_smoothed_exp1 <- function(df1){
   return(df.with_smoothed)
 }
 
+# also saves empiric_augmented tables
 save_prob_tables <- function(df, result_dir, result_fn){
   # Save all Tables (with smoothed values)
   tables.all <- df %>% dplyr::select(id, question, prolific_id, r_smooth) %>%
@@ -269,7 +270,7 @@ save_prob_tables <- function(df, result_dir, result_fn){
     pivot_wider(names_from = question, values_from = r_smooth) %>%
     add_probs()
   fn_tables_all <- paste(result_fn, "_tables_smooth.csv", sep="");
-  path_tables_all <- paste(result_dir, fn_tables_all, sep=.Platform$file.sep);
+  path_tables_all <- paste(result_dir, fn_tables_all, sep=fs);
   write.table(tables.all, file=path_tables_all, sep = ",", row.names=FALSE)
   print(paste('written smoothed probability tables to:', path_tables_all))
   
@@ -293,10 +294,12 @@ save_prob_tables <- function(df, result_dir, result_fn){
   tables.emp.augmented=pmap_dfr(
     tables.empiric.pids %>% dplyr::select(-p_id), function(...){
     row=tibble(...)
+    # p contains rounded values (in cell, keys), original cells remain as columns
     row.long = row %>%
       pivot_longer(cols=c(bg.round, b.round, g.round, none.round),
                    names_to="cell", values_to="p") %>%
       mutate(mod = p %% 10)
+    # vals.augmented doesnt contain original cells anymore, only empirical_id as key to it
     vals.augmented = pmap_dfr(row.long, function(...){
       entry = tibble(...)
       if(entry$p %in% c(0,1,2)){
@@ -318,6 +321,7 @@ save_prob_tables <- function(df, result_dir, result_fn){
       pivot_wider(names_from="cell", values_from="p", values_fn = list)
     y=expand.grid(bg=x$bg.round[[1]], b=x$b.round[[1]], g=x$g.round[[1]],
                   none=x$none.round[[1]])
+    # here corresponding empirical_id is added again together with original cells!
     tables.expanded = prop.table(as.matrix(y+epsilon), 1) %>% as_tibble() %>%
      mutate(bg.round=as.integer(round(bg, 2)*100), b.round=as.integer(round(b,2)*100),
             g.round=as.integer(round(g,2)*100), none.round=as.integer(round(none,2)*100)) %>%
@@ -336,16 +340,30 @@ save_prob_tables <- function(df, result_dir, result_fn){
     distinct_at(vars(c(ends_with(".round"))), .keep_all = TRUE) %>% 
     add_column(augmented=TRUE)
   # merge augmented tables with original tables
+  # .round cells must be distinct *within* empirical_ids - group as
+  # different original tables (empirical_ids) may have the same rounded values 
   tables.emp.all = bind_rows(
     tables.empiric.pids %>% add_column(augmented=FALSE),
     tables.emp.augmented
-  ) %>%
+  ) %>% group_by(empirical_id) %>% 
     distinct_at(vars(c(ends_with(".round"))), .keep_all = TRUE) %>%
-    dplyr::select(-p_id) %>%
-    rowid_to_column("row_id")
-  
-  save_data(tables.emp.all,
-            paste(result_dir, "tables-empiric-augmented.rds", sep=fs))
+    dplyr::select(-p_id)
+
+  # add column p_id with list of participants who gave respective table
+  tbls.emp.augmented = left_join(
+    tables.emp.all %>%
+      rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none,
+             `AC.round`=bg.round, `A-C.round`=b.round,
+             `-AC.round`=g.round, `-A-C.round`=none.round),
+    tables.empiric.pids %>%
+      rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none,
+             AC.round=`bg.round`, `A-C.round`=`b.round`,
+             `-AC.round`=`g.round`, `-A-C.round`=`none.round`) %>% 
+      dplyr::select(empirical_id, p_id),
+    by=c("empirical_id")
+  )
+  save_data(tbls.emp.augmented,
+            paste(result_dir, "tables-empiric-augmented-pids.rds", sep=fs))
 }
 
 process_data <- function(data_dir, data_fn, result_dir, result_fn, debug_run, N_trials){
@@ -391,29 +409,28 @@ add_orig_empirical_only_augmented = function(tbls.gen.all){
   return(tables.generated.all)
 }
 
-formatEmpiricTables = function(result_dir){
-  tables.emp.augmented = readRDS(
-    paste(result_dir, "tables-empiric-augmented.rds", sep=fs)
-  ) %>% rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none,
-               `AC.round`=bg.round, `A-C.round`=b.round,
-               `-AC.round`=g.round, `-A-C.round`=none.round)
-  
-  # check how many tables were sampled from fitted priors given augmented tables
-  tables.empiric.pids = readRDS(
-    paste(result_dir, "tables-empiric-pids.rds", sep=fs)
-  ) %>% rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none,
-               AC.round=`bg.round`, `A-C.round`=`b.round`,
-               `-AC.round`=`g.round`, `-A-C.round`=`none.round`)
-  
-  tbls.emp.augmented = left_join(
-    tables.emp.augmented,
-    tables.empiric.pids %>% dplyr::select(empirical_id, p_id),
-    by=c("empirical_id")
-  )
-  return(tbls.emp.augmented)
-}
+# formatEmpiricTables = function(result_dir){
+  # tables.emp.augmented = readRDS(
+  #   paste(result_dir, "tables-empiric-augmented.rds", sep=fs)
+  # ) %>% rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none,
+  #              `AC.round`=bg.round, `A-C.round`=b.round,
+  #              `-AC.round`=g.round, `-A-C.round`=none.round)
+  # 
+  # tables.empiric.pids = readRDS(
+  #   paste(result_dir, "tables-empiric-pids.rds", sep=fs)
+  # ) %>% rename(AC=bg, `A-C`=b, `-AC`=g, `-A-C`=none,
+  #              AC.round=`bg.round`, `A-C.round`=`b.round`,
+  #              `-AC.round`=`g.round`, `-A-C.round`=`none.round`)
+  # 
+  # tbls.emp.augmented = left_join(
+  #   tables.emp.augmented,
+  #   tables.empiric.pids %>% dplyr::select(empirical_id, p_id),
+  #   by=c("empirical_id")
+  # )
+#   return(tbls.emp.augmented)
+# }
 
-# save mapping of table-empirical ids
+# save mapping of table-empirical ids, returns df with same size as tbls.joint
 formatGeneratedTables = function(tbls.joint){
   # one empirical id maps to several table_ids
   # generated + empirical
@@ -454,6 +471,21 @@ checkRatioGeneratedEmpiricTables = function(tbls.joint, n.empiric){
   # nrow(tables.empiric.pids)
 }
 
+
+# brings sampled tables into format for webppl model and adds
+# empirical_ids/table_ids to sampled tables 
+# @arg fn: dirichlet, dirichlet-filtered, model-tables, latent-mixture, latenet-mixture-filtered
+add_augmented_to_sampled_tables = function(tables.generated, dir_empiric, fn){
+  tbls.emp.augmented = readRDS(paste(dir_empiric, "tables-empiric-augmented-pids.rds", sep=fs))
+  tbls.joint = left_join(tables.generated, tbls.emp.augmented,
+                         by=c("AC.round", "A-C.round", "-AC.round", "-A-C.round")) %>% 
+    mutate(empirical = !is.na(empirical_id)) %>% arrange(augmented)
+  tables.generated.all = formatGeneratedTables(tbls.joint)
+  save_as = paste("mapping-", fn, "-ids.rds", sep="")
+  save_data(tables.generated.all, here("model", "data", save_as))
+  return(tables.generated.all)
+}
+
 makeModelTables = function(dir_empiric){
   dat.model = sampleModelTables()
   tables.model = dat.model$tables
@@ -467,27 +499,31 @@ makeModelTables = function(dir_empiric){
     distinct_at(vars(c(ends_with(".round"))), .keep_all = TRUE) %>% 
     rowid_to_column("table_id")
   
-  tbls.emp.augmented = formatEmpiricTables(dir_empiric)
-    
-  tbls.joint = left_join(tables.generated, tbls.emp.augmented,
-                   by=c("AC.round", "A-C.round", "-AC.round", "-A-C.round")) %>% 
-    mutate(empirical = !is.na(empirical_id)) %>% arrange(augmented)
-  
-  tables.generated.all = formatGeneratedTables(tbls.joint) %>%
-    mutate(stimulus=cn)
-  
+  tables.generated.all = add_augmented_to_sampled_tables(tables.generated,
+                                                         dir_empiric, "tables-model")
   # for generated tables that match only with augmented empirical tables
   # check what the original table was and also add this one
   # tables.generated.all = add_orig_empirical_only_augmented(tables.generated.all)
-  save_data(tables.generated.all, dat.model$params$target_mapping)
   
   tables.model = tables.generated.all %>%
-    dplyr::select(-row_id, -id, -ends_with(".round"), -augmented, -only_augmented)
-  tables.toWPPL = tables.model %>% 
-    group_by(table_id) %>% 
+    dplyr::select(-id, -ends_with(".round"), -augmented, -only_augmented)
+  tbls.toWPPL = tables.model %>% 
+    group_by(table_id, empirical_id) %>% 
     mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
            ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
     add_column(indep_sigma=dat.model$params$indep_sigma)
+
+  # for empirical tables add stimulus for which participants created table
+  tables.toWPPL = tbls.toWPPL %>%
+    dplyr::select(table_id, empirical_id, ll, cn, cn.orig, vs, ps, p_id) %>%
+    rowid_to_column() %>% group_by(rowid) %>%
+    unnest_longer(p_id, indices_include = FALSE) %>% 
+    separate("p_id", into=c("prolific_id", "rel", "prior"), sep="_") %>%
+    unite("stimulus", c("rel", "prior"), sep="_") %>%
+    ungroup() %>% dplyr::select(-rowid, -prolific_id) %>%
+    filter(stimulus != "ind2") %>%
+    mutate(empirical = case_when(stimulus == "NA_NA" ~ FALSE, 
+                                 TRUE ~ TRUE))
   save_data(tables.toWPPL, dat.model$params$tables_empiric)
   return(tables.toWPPL)
 }

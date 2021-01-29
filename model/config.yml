@@ -1,11 +1,11 @@
 default:
-  dir_empiric: "./data/prolific/toy-blocks-pilot-2"
+  dir_empiric: "./data/prolific/blockwords"
   generate_utterances: false
   seed_tables: 202008
   save: true
   cost_conditional: 0
   alpha: 3
-  theta: 0.8
+  theta: 0.7
   verbose: true
   cns: !expr c("A implies C", "C implies A", "A implies -C", "C implies -A", "A || C")
   packages:  !expr c(here("model", "webppl-model", "node_modules", "conditionalsHelpers"),
@@ -26,19 +26,19 @@ tables_model:
   utts_path: "./model/data/utterances-model-tables.rds"
 
 tables_dirichlet:
-  tables_empiric: "./model/data/tables-dirichlet-empirical.rds"
+  tables_empiric: "./model/data/tables-dirichlet-toWPPL.rds"
   tables_mapping: "./model/data/mapping-tables-dirichlet-ids.rds"
   target_dir: "./model/results/tables-dirichlet"
   utts_path: "./model/data/utterances-dirichlet-tables.rds"
-  target_fits: "dirichlet-fits-params.csv"
+  target_fits: "params-fitted-dirichlet.csv"
 
 tables_dirichlet_filtered:
   dir_empiric: "./data/prolific/toy-blocks-pilot-2/filtered_data"
-  tables_empiric: "./model/data/tables-dirichlet-filtered-empirical.rds"
+  tables_empiric: "./model/data/tables-dirichlet-filtered-toWPPL.rds"
   tables_mapping: "./model/data/mapping-tables-dirichlet-filtered-ids.rds"
   target_dir: "./model/results/tables-dirichlet-filtered"
   utts_path: "./model/data/utterances-dirichlet-filtered-tables.rds"
-  target_fits: "dirichlet-fits-params.csv"
+  target_fits: "params-fitted-dirichlet-filtered.csv"
 
 tables_latent_mixture:
   tables_empiric: ""
@@ -53,23 +53,12 @@ tables_latent_mixture:
 #           large (see in webppl file) for all states given to the speaker,
 #           - if set to "" no condition, just sampled from prior as usual
 speaker:
+  bns_sampled: 1000
   level_max: "speaker"
   utt: ""
   target_fn: "results-speaker.rds"
   target_params: "params-speaker.rds"
-
-
-speaker_empirical_tables:
-  inherits: speaker
   n_samples: 0 # bns given by empirical tables
-  predictions_for: "empirical-tables"
-  subdir: "table-based-predictions"
-
-speaker_prior_samples:
-  inherits: speaker
-  n_samples: 0 # bns sampled from prior
-  predictions_for: "prior-samples-stimuli"
-  subdir: "prior-samples-based-predictions"
 
 prior:
   level_max: "prior"
@@ -103,10 +92,10 @@ model_tables:
   n_ind_tables: 3000
   n_dep_tables: 2000
   indep_sigma: 0.005
-  tables_path: "./model/data/tables-model.rds"
-  tables_empiric: "./model/data/tables-model-empirical.rds"
-  target_dir: "./model/data"
+  tables_path: "model/data/tables-model.rds"
+  tables_empiric: "model/data/tables-model-empirical.rds"
+  target_dir: "model/data"
   target_params: "params-tables-model.rds"
-  target_mapping: "./model/data/mapping-tables-model-ids.rds"
+  target_mapping: "model/data/mapping-tables-model-ids.rds"
   n_best_cns: 3
 # there needs to be 1 blank final line!

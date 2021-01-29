@@ -215,6 +215,8 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   if(!is.na(out.by_comments)){
     out.comments = read_csv(paste(data.dir, out.by_comments, sep=fs)) %>%
       dplyr::select(prolific_id, id)
+    message(paste(length(out.comments$prolific_id %>% unique),
+                  'participants excluded due to comments'))
     df.out = bind_rows(df.out, out.comments)
   }
   # 6. participants who choose <= 3 different utterances AND whose total time
@@ -261,7 +263,6 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   
   # save filtered data
   df.filtered = exclude_data(exp.name, df.out)
-
   save_data(df.filtered$exp2,
             paste(filtered_dir, "human-exp2.rds", sep=fs));
   save_data(df.filtered$exp1_sm,
@@ -284,9 +285,18 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   df1 = standardize_color_groups_exp1(df1)
   save_prob_tables(df1, filtered_dir, exp.name);
   
+  # average productions
+  df.avg.exp2 = task2_avg_per_stimulus(filtered_dir)
+  saveRDS(df.avg.exp2, paste(result_dir, "behavioral-avg-task2.rds", sep=fs))
+  write_csv(df.avg.exp2, paste(result_dir, "behavioral-avg-task2.csv", sep=fs))
+  
   # fit dirichlet distributions to filtered data
-  df.params.fit = run_fit_dirichlet(filtered_dir, exp.name, "dirichlet-filtered")
+  fn_suffix = "dirichlet-filtered"
+  df.params.fit = run_fit_dirichlet(filtered_dir, exp.name, fn_suffix)
+  tables.dirichlet = makeDirichletTables(df.params.fit, filtered_dir, fn_suffix)
+  # and check goodness of fits
   N_participants = df1$prolific_id %>% unique() %>% length()
+  message("compute goodness of dirichlet fits ...")
   res.goodness = compute_goodness_dirichlets(df.params.fit, filtered_dir, N_participants)
   p = plot_goodness_dirichlets(res.goodness, df.params.fit, filtered_dir)
   

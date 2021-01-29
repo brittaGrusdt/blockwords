@@ -10,38 +10,28 @@ source(here("R", "utils-exp2.R"))
 # used_tables = "tables_dirichlet"
 used_tables = "tables_dirichlet_filtered"
 
-# params <- configure(c("speaker_empirical_tables", used_tables))
-params <- configure(c("speaker_prior_samples", used_tables))
-
-
-# params <- configure(c("pl", used_tables))
+# this only makes a difference for the states given to the speaker, in case of
+# speaker_empirical_tables, these are *only* tables that were actually 
+# used by participants
+params <- configure(c("speaker", used_tables))
 
 # Setup -------------------------------------------------------------------
-params$target_dir = paste(params$target_dir, params$subdir, sep=.Platform$file.sep)
 dir.create(params$target_dir, recursive = TRUE)
-params$target_params <- file.path(params$target_dir, params$target_params, fsep=.Platform$file.sep)
+params$target_params <- file.path(params$target_dir, params$target_params, fsep=fs)
 
 ## Generate/Retrieve tables
 tables <- readRDS(params$tables_empiric)
 print(paste("tables read from:", params$tables_empiric))
+# specify bayes nets for which speaker distributions will be computed
+# for each stimulus sample tables from fitted distributions, i.e. from 
+# set of input tables
 params$tables = tables %>% ungroup %>%
   dplyr::select(table_id, ps, vs, stimulus, "ll", "cn")
 
-# specify bayes nets for which speaker distributions will be computed
-if("predictions_for" %in% names(params)) {
-  if(params$predictions_for == "empirical-tables") {
-    params$bn_ids = tables %>% filter(!is.na(empirical_id)) %>% pull(table_id)
-  } else if(params$predictions_for == "prior-samples-stimuli"){
-    # for each stimulus sample tables from fitted distributions, i.e. from 
-    # set of input tables
-    set.seed(params$seed_tables)
-    bn_ids = group_map(tables %>% group_by(stimulus), function(t, stim){
-      return(tibble(table_id = sample(x=t$table_id, size=100, replace=TRUE),
-             stimulus = stim))
-    })
-    params$bn_ids = bind_rows(bn_ids) %>% pull(table_id)
-  }
-}
+# specify input states (subset of all states) for which speaker predictions are computed!
+params$bns_sampled = tables %>% dplyr::select(table_id, stimulus) %>% 
+  group_by(table_id, stimulus) %>% summarize(n=n(), .groups="drop_last")
+params$bn_ids = params$bns_sampled %>% pull(table_id) %>% unique()
 
 ## Generate/Retrieve utterances
 generate_utts <- function(params){
@@ -64,23 +54,11 @@ posterior <- run_webppl(params$model_path, params)
 
 # restructure data and save
 if(params$level_max == "speaker") {
-  speaker <- posterior$distributions %>% structure_speaker_data(params) %>%
-    group_by(stimulus)
-  save_data(posterior$all_ids %>% rename(stimulus_id=value),
-            paste(params$target_dir, .Platform$file.sep,
-                  "sample-ids-", params$target_fn, sep=""))
-  
+  speaker <- posterior %>% structure_speaker_data(params) %>% group_by(stimulus)
+  res.avg = average_predictions(speaker, params, "model-avg-predictions")
+  # for all input states, get model prediction along with behavioral observations
   res.behav_model = join_model_behavioral_data(speaker, params);
-  sp = res.behav_model %>%
-    dplyr::select(prolific_id, id, utterance, model.p, model.table) %>%
-    rename(stimulus = id, probs=model.p)
-  if(params$predictions_for == "prior-samples-stimuli") {
-    res.behav_model.avg = join_model_behavioral_avg_stimulus(sp, params)                                                       
-  } else if(params$predictions_for == "empirical-tables") {
-    res.behav_model.avg = join_model_behavioral_avg_empirical_tables(
-      str_replace_all(used_tables, "_", "-"), res.behav_model, params
-    )
-  }
+  
 } else if(params$level_max %in% c("priorN")){
     data <- structure_bns(posterior, params)
 } else if(params$level_max == "log_likelihood"){

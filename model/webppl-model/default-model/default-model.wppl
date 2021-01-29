@@ -75,14 +75,17 @@ if(LEVEL_MAX == "speaker"){
   // depending on value of UTT; use (UTT="" for no condition)
   var prior_conditioned = priorConditionedForSpeaker(UTT);
   var n_samples = data["n_samples"][0]
-  // draw n_samples from prior or take bns with given ids or take all bns from support of prior
+   // define set of input states for speaker
+   // 1. draw n_samples from prior or
+   // 2. take bns with given ids or
+   // 3. take all bns from support of prior
   var bns = n_samples != 0 ? repeat(n_samples, function(){sample(prior_conditioned)}) :
-            data["bn_ids"] ? filter(function(bn){
-              return data["bn_ids"].includes(bn.id)
-            }, all_bns) : all_bns;
+    (data["bn_ids"] ?
+      filter(function(bn){return data["bn_ids"].includes(bn.id)}, all_bns) : all_bns);
 
   var all_ids =  _.map(bns, 'id')
-  display('nb bns considered for speaker:' + bns.length)
+  display('nb bns considered for speaker (might contain identical tables with different causal nets):' + bns.length)
+  // from given set of states, take each distinct one only once!
   var bns_uniq = []
   var bn_ids = reduce(function(bn, acc){
     var idx = acc.indexOf(bn["id"]);
@@ -94,10 +97,9 @@ if(LEVEL_MAX == "speaker"){
     }
   }, [], bns);
 
-  display('# unique bns that are input to speaker(where condition, if any, holds): ' + bns_uniq.length)
+  display('# unique tables that are input to speaker(where condition, if any, holds), here causal net is not important as speaker makes the same predictions for identical tables with diff. cns.: ' + bns_uniq.length)
   var distributions = run_speaker(bns_uniq)
-  var obj= {distributions, all_ids}
-  obj
+  distributions
 
 } else if(LEVEL_MAX == "ll_all_utts"){
   var distributions = {"ll": map(wrap_ll, globalStore.utterances)}
