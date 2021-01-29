@@ -156,21 +156,26 @@ df.unc %>% mutate(id=as.character(id), utt.type=as.character(utt.type)) %>%
 # Model-vs-human summaries ---------------------------------------------------
 # @arg tables_fn: "tables-dirichlet", "tables-dirichlet-filtered", "tables-model"
 # @arg base_predictions: "table-based-predictions", "prior-samples-based-predictions"
-plotAveragePredictions = function(tables_fn){
+plotAveragePredictions = function(tables_fn, dir_empiric){
   target_dir = here("model", "results", tables_fn)
   plot_dir = paste(target_dir, "plots", sep=fs)
   if(!dir.exists(plot_dir)) {
     dir.create(plot_dir)
   }
-  fn = paste(target_dir, "model-behavioral-average-per-stimulus.rds", sep=fs)
-  print(fn)
-  data.joint = readRDS(fn) %>% dplyr::select(-count, -n) %>%
-    filter(stimulus != "ind2")
-  data.joint = data.joint %>%
+  model.avg = readRDS(paste(target_dir, "model-avg-predictions.rds", sep=fs)) %>%
+    filter(stimulus != "ind2") %>% rename(model=p)
+  behav.avg = readRDS(paste(dir_empiric, "behavioral-avg-task2.rds", sep=fs)) %>%
+    rename(stimulus = id) %>% filter(stimulus != "ind2") %>% rename(behavioral=ratio)
+  
+  data.joint = left_join(behav.avg %>% dplyr::select(-N, -count),
+                         model.avg %>% dplyr::select(-predictor, -best.utt), 
+                         by=c("stimulus", "utterance"))
+  data.joint.long = data.joint %>%
+    pivot_longer(cols=c(behavioral, model), names_to="predictor", values_to="p") %>%
     mutate(utterance=factor(utterance, levels = levels.responses),
            predictor=as.factor(predictor))
 
-  p.bars = data.joint %>% filter(p > 0) %>% arrange(desc(p)) %>% 
+  p.bars = data.joint.long %>% filter(p > 0) %>% arrange(desc(p)) %>% 
     ggplot(aes(x=p, y=utterance, fill=predictor)) +
     geom_bar(stat="identity", position=position_dodge()) +
     theme_bw(base_size=20) +
@@ -180,12 +185,11 @@ plotAveragePredictions = function(tables_fn){
   ggsave(paste(plot_dir, "avg_comparison_bars.png", sep=fs), p.bars,
          height=20, width=16)
 
-  data.wide = data.joint %>% pivot_wider(names_from="predictor", values_from="p")
   p.scatter = 
-    ggscatter(data.wide, y = "behavioral", x = "model", add = "reg.line",
+    ggscatter(data.joint, y = "behavioral", x = "model", add = "reg.line",
               conf.int = TRUE, cor.coef = TRUE, cor.method = "pearson",
               ylab = "Empirical observations", xlab = "Model predictions") +
-    geom_point(data=data.wide, aes(y=behavioral, x=model, color=utterance)) +
+    geom_point(data=data.joint, aes(y=behavioral, x=model, color=utterance)) +
     theme_bw(base_size=20) + theme(legend.position = "top") 
   ggsave(paste(plot_dir, "avg_comparison_scattered.png", sep=fs),
          p.scatter, height=12, width=20)
@@ -193,52 +197,40 @@ plotAveragePredictions = function(tables_fn){
   p.scatter.stim = p.scatter + facet_wrap(~stimulus)
   ggsave(paste(plot_dir, "avg_comparison_scattered-stim.png", sep=fs),
          p.scatter.stim, height=14, width=20)
-  return(data.wide)
+  return(data.joint)
 }
 
-df = plotAveragePredictions("tables-dirichlet")
-df = plotAveragePredictions("tables-dirichlet-filtered")
-df = plotAveragePredictions("tables-model")
+df = plotAveragePredictions("tables-dirichlet-filtered", DATA$result_dir)
+df = plotAveragePredictions("tables-model", DATA$result_dir)
 
 # single participants
 plotModelAndBehavioral = function(fn_tables){
-  save_to = paste(DATA$plot_dir, "comparison-exp1-exp2-model", fn_tables, sep=fs)
+  save_to = paste(DATA$plot_dir, "by-stimulus", sep=fs)
   if(!dir.exists(save_to)) {dir.create(save_to, recursive = TRUE)}
   mapping = readRDS(
     here("model", "data", paste("mapping-", fn_tables, "-ids.rds", sep=""))
   )
-  joint_data = readRDS(
-    here("model", "results", fn_tables, "model-behavioral-each-table-id.rds")
-  )
-  dat = left_join(
-    joint_data, 
-    mapping %>% dplyr::select(empirical_id, p_id) %>% unnest(c("p_id")) %>% distinct(),
-    by=c("empirical_id")
-  )
-  dat = dat %>% 
-    separate(p_id, into=c("pid", "stimulus", "prior"), sep="_") %>%
-    unite("stimulus", c("stimulus", "prior"), sep="_") %>%
-    filter(id==stimulus & prolific_id == pid) %>%
-    dplyr::select(-pid, -stimulus) %>% group_by(table_id) %>% 
-    mutate(utterance=factor(utterance, levels=levels.responses))
+  dat = readRDS(
+    here("model", "results", fn_tables, "model-behavioral-predictions.rds")
+  ) %>% mutate(utterance=factor(utterance, levels=levels.responses)) %>%
+    dplyr::select(-stimulus)
   
-  df.ids = dat %>% ungroup() %>% dplyr::select(prolific_id, id, empirical_id) %>%
-    distinct() %>% rowid_to_column("rowid")
+  df.ids = dat %>% ungroup() %>% dplyr::select(prolific_id, id) %>%
+    distinct() 
   
   for(i in seq(1, nrow(df.ids))) {
     if(i%%10==0) print(i)
     pid = df.ids[i,]$prolific_id
-    stimulus = df.ids[i,]$id
-    df.row = dat %>% filter(prolific_id == (!! pid) & id == (!! stimulus)) %>%
+    id = df.ids[i,]$id
+    df.row = dat %>% filter(prolific_id == pid & id == (!! id)) %>%
       mutate(table_id=as.factor(table_id))
-    target_folder = paste(save_to, pid, sep=fs) 
+    target_folder = paste(save_to, id, sep=fs) 
     if(!dir.exists(target_folder)) dir.create(target_folder);
     
     behavioral = df.row %>% ungroup() %>%
-      dplyr::select(-table_id, -model.p, -model.table, -orig.table) %>% distinct()
+      dplyr::select(-table_id, -model.p, -orig.table) %>% distinct()
     behavioral.uttered = behavioral %>% filter(human_exp2==1) 
-    table_ids = df.row$table_id %>% unique()
-    
+    emp_id = behavioral.uttered$empirical_id %>% unique()
     p.speaker = behavioral %>%
       ggplot(aes(y=utterance)) +
       geom_bar(data=behavioral, aes(x=human_exp1), stat="identity", color='grey') +
@@ -249,8 +241,10 @@ plotModelAndBehavioral = function(fn_tables){
                  color='orange', size=8) +
       theme_classic(base_size=20) +
       theme(legend.position="bottom") +
-      geom_vline(aes(xintercept=0.8), color="gray", linetype="solid", size=1,
-                 show.legend=FALSE)
+      geom_vline(aes(xintercept=0.7), color="gray", linetype="solid", size=1,
+                 show.legend=FALSE) +
+      ggtitle(pid)
+      
     tbl.orig = df.row %>% filter(orig.table)
     if(tbl.orig %>% nrow() != 0){
       p.speaker = p.speaker +
@@ -270,8 +264,8 @@ plotModelAndBehavioral = function(fn_tables){
           labels=rep("utterance participant", length(levels.responses))
         )
     }
-    ggsave(paste(save_to, fs, pid, fs, stimulus, ".png", sep=""), p.speaker,
-           height=12, width=20)
+    ggsave(paste(save_to, fs, id, fs, "empirical_id_", emp_id, ".png", sep=""),
+           p.speaker, height=12, width=20)
   }
 }
 
@@ -325,6 +319,7 @@ if(!use_filtered && plot_single_participants) {
       }
     }
   }
+  
   # model predictions with theoretic/dirichlet-fitted tables (takes a while)
   plotModelAndBehavioral("tables-model")
   plotModelAndBehavioral("tables-dirichlet")
