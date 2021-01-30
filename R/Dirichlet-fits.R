@@ -33,8 +33,8 @@ get_optimal_alphas <- function(table_data, st_id) {
 
 sample_dirichlet <- function(params, n=1000){
   set.seed(seed_fitted_tables)
-  tables = pmap_dfr(params, function(...){
-     row = tibble(...) 
+  tables = map_dfr(seq(1, nrow(params)), function(i){
+     row = params[i,]
      rdirichlet(n, row[1, 2:5] %>% as.numeric()) %>% as_tibble() %>%
        add_column(stimulus=row$id)
     }) %>% rename(bg=V1, b=V2, g=V3, none=V4)
@@ -53,7 +53,8 @@ makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augment
 # brings sampled tables into format for webppl model and if specified,
 # add augmemted tables to sampled tables 
 # @arg fn: dirichlet, dirichlet-filtered, model-tables, latent-mixture, latenet-mixture-filtered
-format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn, add_augmented=FALSE){
+format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn,
+                                         add_augmented=FALSE){
   # table_ids are unique with respect to table, but not wrt stimulus, i.e.
   # a single table_id may appear for different stimuli
   tables.generated =  tables.fit %>% 
@@ -171,7 +172,7 @@ run_fit_dirichlet = function(result_dir, exp_name, fn_suffix){
   table_data <- read_csv(path_smoothed_tables) %>% arrange(id)
   message(paste('load data for fitting dirichlets from', path_smoothed_tables))
   
-  stimulus_id_list <- table_data %>% pull(id) %>% unique()
+  stimulus_id_list <- table_data %>% filter(id != "ind2") %>% pull(id) %>% unique()
   params.fit <- map_df(
     stimulus_id_list,
     function(s) {

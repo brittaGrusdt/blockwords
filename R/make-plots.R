@@ -185,11 +185,12 @@ plotAveragePredictions = function(tables_fn, dir_empiric){
   ggsave(paste(plot_dir, "avg_comparison_bars.png", sep=fs), p.bars,
          height=20, width=16)
 
+  df.joint = data.joint %>% chunk_utterances()
   p.scatter = 
-    ggscatter(data.joint, y = "behavioral", x = "model", add = "reg.line",
+    ggscatter(df.joint, y = "behavioral", x = "model", add = "reg.line",
               conf.int = TRUE, cor.coef = TRUE, cor.method = "pearson",
               ylab = "Empirical observations", xlab = "Model predictions") +
-    geom_point(data=data.joint, aes(y=behavioral, x=model, color=utterance)) +
+    geom_point(data=df.joint, aes(y=behavioral, x=model, color=utterance)) +
     theme_bw(base_size=20) + theme(legend.position = "top") 
   ggsave(paste(plot_dir, "avg_comparison_scattered.png", sep=fs),
          p.scatter, height=12, width=20)
@@ -197,7 +198,7 @@ plotAveragePredictions = function(tables_fn, dir_empiric){
   p.scatter.stim = p.scatter + facet_wrap(~stimulus)
   ggsave(paste(plot_dir, "avg_comparison_scattered-stim.png", sep=fs),
          p.scatter.stim, height=14, width=20)
-  return(data.joint)
+  return(df.joint)
 }
 
 df = plotAveragePredictions("tables-dirichlet-filtered", DATA$result_dir)

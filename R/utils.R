@@ -472,59 +472,76 @@ checkRatioGeneratedEmpiricTables = function(tbls.joint, n.empiric){
 }
 
 
-# brings sampled tables into format for webppl model and adds
-# empirical_ids/table_ids to sampled tables 
+# matches empirical_ids with table_ids from sampled tables and saves mapping
+# and brings result into format for webppl model
 # @arg fn: dirichlet, dirichlet-filtered, model-tables, latent-mixture, latenet-mixture-filtered
-add_augmented_to_sampled_tables = function(tables.generated, dir_empiric, fn){
+add_augmented_to_sampled_tables = function(tables.generated, dir_empiric, target_fn){
   tbls.emp.augmented = readRDS(paste(dir_empiric, "tables-empiric-augmented-pids.rds", sep=fs))
   tbls.joint = left_join(tables.generated, tbls.emp.augmented,
                          by=c("AC.round", "A-C.round", "-AC.round", "-A-C.round")) %>% 
     mutate(empirical = !is.na(empirical_id)) %>% arrange(augmented)
   tables.generated.all = formatGeneratedTables(tbls.joint)
-  save_as = paste("mapping-", fn, "-ids.rds", sep="")
-  save_data(tables.generated.all, here("model", "data", save_as))
+  save_data(tables.generated.all, target_fn)
   return(tables.generated.all)
 }
 
-makeModelTables = function(dir_empiric){
-  dat.model = sampleModelTables()
+makeModelTables = function(dir_empiric, use_filtered){
+  dat.model = sampleModelTables(use_filtered)
   tables.model = dat.model$tables
+  tables.par = dat.model$params
   tables.generated = tables.model %>% unnest(c(vs, ps)) %>%
     pivot_wider(names_from="vs", values_from="ps") %>% 
     mutate(AC.round=as.integer(round(AC, 2) * 100),
            `A-C.round`=as.integer(round(`A-C`,2) * 100),
            `-AC.round`=as.integer(round(`-AC`, 2) * 100),
            `-A-C.round`=as.integer(round(`-A-C`, 2) * 100)) %>%
-    ungroup() %>% dplyr::select(-bn_id) %>% 
-    distinct_at(vars(c(ends_with(".round"))), .keep_all = TRUE) %>% 
-    rowid_to_column("table_id")
+    ungroup() %>% dplyr::select(-id)
+  # all sampled tables retained but table_id should map to unique tables
+  tables.generated$table_id = tables.generated %>%
+    group_by(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`) %>%
+    group_indices()
+  tables.generated = tables.generated %>% group_by(bn_id)
   
-  tables.generated.all = add_augmented_to_sampled_tables(tables.generated,
-                                                         dir_empiric, "tables-model")
+  # check match with empirical (augmented) tables
+  tables.generated.all = add_augmented_to_sampled_tables(
+    tables.generated, dir_empiric, paste(tables.par$target_dir, tables.par$target_mapping, sep=fs)
+  )
   # for generated tables that match only with augmented empirical tables
   # check what the original table was and also add this one
+  # todo check this function
   # tables.generated.all = add_orig_empirical_only_augmented(tables.generated.all)
   
   tables.model = tables.generated.all %>%
-    dplyr::select(-id, -ends_with(".round"), -augmented, -only_augmented)
+    dplyr::select(-ends_with(".round"), -augmented, -only_augmented)
+  
   tbls.toWPPL = tables.model %>% 
-    group_by(table_id, empirical_id) %>% 
+    group_by(bn_id, table_id, empirical_id, cn) %>% 
     mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
            ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
-    add_column(indep_sigma=dat.model$params$indep_sigma)
+    add_column(indep_sigma=tables.par$indep_sigma)
 
   # for empirical tables add stimulus for which participants created table
-  tables.toWPPL = tbls.toWPPL %>%
-    dplyr::select(table_id, empirical_id, ll, cn, cn.orig, vs, ps, p_id) %>%
+  # add this as list (we dont want to expand nb of tables here, just need the info)
+  tbls.toWPPL.stim = tbls.toWPPL %>%
+    dplyr::select(bn_id, table_id, empirical_id, ll, cn, cn.orig, vs, ps, p_id) %>%
     rowid_to_column() %>% group_by(rowid) %>%
     unnest_longer(p_id, indices_include = FALSE) %>% 
     separate("p_id", into=c("prolific_id", "rel", "prior"), sep="_") %>%
     unite("stimulus", c("rel", "prior"), sep="_") %>%
-    ungroup() %>% dplyr::select(-rowid, -prolific_id) %>%
-    filter(stimulus != "ind2") %>%
+    dplyr::select(-prolific_id) %>% 
     mutate(empirical = case_when(stimulus == "NA_NA" ~ FALSE, 
-                                 TRUE ~ TRUE))
-  save_data(tables.toWPPL, dat.model$params$tables_empiric)
+                                 TRUE ~ TRUE)) %>% 
+    filter(stimulus != "ind2") %>%  # don't include training-test trial!!
+    distinct_at(vars(c(rowid, stimulus)), .keep_all = TRUE) # two people may have created 
+  # same table in same stimulus, only count once!
+  
+  tables.toWPPL = tbls.toWPPL.stim %>% group_by(rowid) %>% 
+    mutate(stimulus=list(stimulus)) %>%
+    group_by(bn_id, table_id, empirical_id, cn) %>% 
+    distinct() %>% dplyr::select(-rowid)
+
+  save_data(tables.toWPPL, paste(tables.par$target_dir, tables.par$tables_path, sep=fs))
+  save_data(tables.par, paste(tables.par$target_dir, tables.par$target_params, sep=fs))
   return(tables.toWPPL)
 }
 

@@ -253,7 +253,7 @@ df.out = qual.time %>%
   add_column(id=rep(list(TRIALS), nrow(qual.time))) %>%
   unnest(c(id)) %>% group_by(prolific_id) %>%
   filter(id != "ind2")
-write_csv(df.out, paste(DATA$result_dir, "out_by_quality_time.csv", sep=fs))
+write_csv(df.out, paste(DATA$result_dir, "out_by_quality.csv", sep=fs))
 
 p = dat.quality %>% distinct_at(vars(c(id)), .keep_all = TRUE) %>% 
   ggplot(aes(x=mean.id)) +

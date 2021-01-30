@@ -96,10 +96,6 @@ create_tables <- function(params){
     rename(cn.orig=cn)
   
   tables = tables_to_bns(tables, params)
-  if(params$save) {
-    tables %>% save_data(here(params$tables_path))
-    params %>% save_data(here(params$target_params))
-  }
   return(tables)
 }
 
@@ -120,10 +116,13 @@ tables_to_bns = function(tables, params){
   return(tbls)
 }
 
-sampleModelTables = function(){
-  params <- configure(c("model_tables"))
-  params$target <- file.path(params$target_dir, params$target_fn, fsep=fs)
-  params$target_params <- file.path(params$target_dir, params$target_params, fsep=fs)
+sampleModelTables = function(use_filtered){
+  if(use_filtered) {
+    params <- configure(c("model_tables", "model_input_filtered"))
+  } else {
+    params = configure(c("model_tables", "model_input_all"))
+  }
+  params$save=FALSE
   tables.model <- create_tables(params)
   return(list(tables=tables.model, params=params))
 }

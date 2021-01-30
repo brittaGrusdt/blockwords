@@ -341,18 +341,26 @@ average_predictions = function(dat.speaker, params, target_fn){
   bn_samples = params$bns_sampled %>% group_by(table_id, stimulus) %>%
     mutate(stimulus=list(rep(stimulus, n))) %>% dplyr::select(-n)
   df = dat.speaker %>% ungroup() %>% dplyr::select(cn, table_id, utterance, probs)
-  df.model = left_join(
-    df %>% group_by(table_id), 
-    bn_samples,
-    by=c("table_id")
-  )
+  df.model = left_join(df %>% group_by(table_id), bn_samples, by=c("table_id"))
+  
   df.bn_samples = df.model %>%
     group_by(table_id) %>% 
     pivot_wider(names_from="utterance", values_from="probs", names_prefix="utt.") %>%
     unnest(c(stimulus)) %>% 
     pivot_longer(cols=starts_with("utt."), names_to="response",
                  names_prefix="utt.",values_to="probs")
-  df.n_stim = df.bn_samples %>% group_by(stimulus) %>% summarize(n.stim=n()/20, .groups="drop_last")
+  # get counts of how often each stimulus appears
+  if(str_detect(params$used_tables, "tables_model")){
+    # for model tables stimuli are matched to generated tables, i.e. they are not 
+    # generated for particular stimuli as we do for dirichlets, which means 
+    # that one table may map to several stimuli
+    df.bn_samples = df.bn_samples %>% rowid_to_column() %>%  unnest(c(stimulus)) %>% 
+      distinct_at(vars(c(rowid, stimulus)), .keep_all = TRUE) %>%
+      ungroup() %>% dplyr::select(-rowid)
+  }
+  df.n_stim = df.bn_samples %>% group_by(stimulus) %>%
+    summarize(n.stim=n()/20, .groups="drop_last")
+  
   model.avg.bn_samples = df.bn_samples %>% 
     group_by(stimulus, response) %>% 
     summarize(p=mean(probs), .groups="drop_last") %>%
@@ -379,7 +387,9 @@ join_model_behavioral_data = function(dat.speaker, params){
     dplyr::select(table_id, cn, stimulus, AC, `A-C`, `-AC`, `-A-C`,
                   utterance, probs)
   
-  tables.empiric = readRDS(paste(params$dir_empiric, "tables-empiric-pids.rds", sep=fs))
+  path_empiric = paste(params$dir_empiric, "tables-empiric-pids.rds", sep=fs)
+  tables.empiric = readRDS(path_empiric)
+  message(paste("read empiric data from", path_empiric))
   pids = tables.empiric %>% ungroup() %>%
     dplyr::select(-bg, -b, -g, -none, -ends_with(".round")) %>% unnest(c(p_id))
   
@@ -456,5 +466,5 @@ join_model_behavioral_data = function(dat.speaker, params){
               paste(params$target_dir, "model-behavioral-predictions.rds",
                     sep=.Platform$file.sep))
   }
-  return(data.behav_model)
+  return(behav_model)
 }

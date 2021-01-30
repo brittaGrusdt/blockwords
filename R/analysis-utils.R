@@ -250,7 +250,7 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
                 'participant(s) excluded due to <= 3 different utterance AND < 20 minutes.'))
   # 7. Quality
   if(!is.na(out.by_quality)) {
-    out.qual = read_csv(paste(data.dir, "out_by_quality_time.csv", sep=fs)) %>%
+    out.qual = read_csv(paste(data.dir, "out_by_quality.csv", sep=fs)) %>%
       dplyr::select(prolific_id, id)
     message(paste(length(out.qual$prolific_id %>% unique),
                   'participant(s) excluded due to large quality diff AND total time spent (very short/long).'))
@@ -287,8 +287,8 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   
   # average productions
   df.avg.exp2 = task2_avg_per_stimulus(filtered_dir)
-  saveRDS(df.avg.exp2, paste(result_dir, "behavioral-avg-task2.rds", sep=fs))
-  write_csv(df.avg.exp2, paste(result_dir, "behavioral-avg-task2.csv", sep=fs))
+  saveRDS(df.avg.exp2, paste(filtered_dir, "behavioral-avg-task2.rds", sep=fs))
+  write_csv(df.avg.exp2, paste(filtered_dir, "behavioral-avg-task2.csv", sep=fs))
   
   # fit dirichlet distributions to filtered data
   fn_suffix = "dirichlet-filtered"
@@ -299,6 +299,9 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   message("compute goodness of dirichlet fits ...")
   res.goodness = compute_goodness_dirichlets(df.params.fit, filtered_dir, N_participants)
   p = plot_goodness_dirichlets(res.goodness, df.params.fit, filtered_dir)
+  
+  # also match model tables with filtered data
+  tables.model = makeModelTables(dir_empiric=filtered_dir, use_filtered=TRUE)
   
   return(df.filtered)
 }

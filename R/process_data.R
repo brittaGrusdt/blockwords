@@ -105,11 +105,10 @@ save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs
 # look at comments/time/quality and specify in results_joint_experiment.Rmd
 # participants to be excluded
 # source(here("R", "analysis-utils.R"))
-# df.filtered = filter_data(result_dir, exp_name, "out_by_comments.csv", "out_by_quality_time.csv")
+# df.filtered = filter_data(result_dir, exp_name, "out_by_comments.csv", "out_by_quality.csv")
 
-
-# generate theoretic model tables (as in paper) ---------------------------
-tables.model = makeModelTables(result_dir)
+# generate theoretic model tables (as in paper) and match with experimental data 
+# tables.model = makeModelTables(dir_empiric=result_dir, use_filtered=FALSE)
 
 # todo: implement latent mixture
 # df.params.fit = run_fit_latent_mixture(result_dir, exp_name, "cns")

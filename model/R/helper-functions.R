@@ -55,23 +55,22 @@ best_utterance = function(data.speaker){
 }
 
 # instead of all different utterances, chunk them into categories (for plotting)
+# @arg data: with column 'utterance'
 chunk_utterances <- function(data, utts_kept=c()){
-  levels = c("likely + literal", "conditional", "literal", "conjunction");
+  levels = c("might + literal", "conditional", "literal", "conjunction");
   s = paste(utts_kept, collapse="");
   if(str_detect(s, ">") || str_detect(s, "if")){
-    levels = c("likely + literal", "other conditional", "literal", "conjunction",
+    levels = c("might + literal", "other conditional", "literal", "conjunction",
                utts_kept);
   }
   data = data %>% mutate(
     utterance = case_when(
       utterance %in% utts_kept ~ utterance,
-      startsWith(utterance, "likely") ~ "likely + literal",
-      str_detect(utterance, ">") ~ levels[[2]],
-      str_detect(utterance, "and") ~ "conjunction",
+      str_detect(utterance, "might") ~ "might + literal",
+      str_detect(utterance, "if") ~ levels[[2]],
+      (str_detect(utterance, "and") | str_detect(utterance, "but")) ~ "conjunction",
       TRUE ~ "literal"
     ),
-    utterance = str_replace_all(utterance, "-", "¬"),
-    utterance = str_replace(utterance, ">", "->"),
     utterance = factor(utterance, levels=
                          c(map(utts_kept, function(s){
                            s <- str_replace_all(s, "-", "¬")
