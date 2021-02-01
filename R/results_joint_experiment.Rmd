@@ -17,6 +17,7 @@ source(here("R", "analysis-utils.R"))
 # exp.name = "toy-blocks-pilot-2"
 exp.name = "blockwords"
 DATA = load_exp_data(exp.name, use_filtered=FALSE)
+# DATA = load_exp_data(exp.name, use_filtered=TRUE)
 ```
 
 ## Meta info about participants
@@ -28,16 +29,18 @@ p <- df %>%
   ggplot(aes(x=factor(0), y=timeSpent)) + 
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(shape=16, width=0.2) +
-  geom_hline(aes(yintercept = mean(df$timeSpent) + sd(df$timeSpent),
-                 color="yellow")) +
-  geom_hline(aes(yintercept = mean(df$timeSpent) + 2 * sd(df$timeSpent),
-                 color="red")) +
   theme(legend.position="none") +
-  labs(x = "", y="timeSpent in min.")
-p
+  labs(x = "", y="timeSpent in min.") +
+  geom_hline(aes(yintercept = mean(df$timeSpent)), color="green")
 
+p
 df %>% ungroup() %>%  group_by(prolific_id) %>%  summary()
 ```
+
+```{r}
+df %>% filter(timeSpent < 20)
+```
+
 
 ## Reaction Times per stimulus
 
@@ -201,8 +204,9 @@ p  = df %>%
   
 ggsave(paste(DATA$plot_dir, "utterance-frequencies.png", sep=fs),
        p, width=18, height=22)
+```
 
-
+```{r, utt-frquencies and time}
 # participants who choose <= 3 different utterances AND whose total time spent
 # was less than 20 minutes
 df.sum = df %>%
@@ -210,14 +214,16 @@ df.sum = df %>%
   group_by(prolific_id) %>% mutate(n.utt=n()) %>%
   dplyr::select(-response) %>% distinct()
 
+df.sum %>% filter(n.utt <= 3)
+
 df.out = df.sum %>% 
   filter(n.utt <= 3 & timeSpent < 20) 
 df.out
 
 # remove all trials for these participants
-df.out = df.out %>% dplyr::select(prolific_id) %>%
-  add_column(id=rep(list(TRIALS), nrow(df.out))) %>%
-  unnest(c(id)) %>% group_by(prolific_id)
+# df.out = df.out %>% dplyr::select(prolific_id) %>%
+#   add_column(id=rep(list(TRIALS), nrow(df.out))) %>%
+#   unnest(c(id)) %>% group_by(prolific_id)
 ```
 
 # Participants' slider rating for u in task 1 is 0 but u is produced in task 2
@@ -233,7 +239,8 @@ Data Quality
 dat.quality = readRDS(paste(here("data", "prolific", exp.name), fs,
                             "test-data-prior-quality.rds", sep=""))
 quality.means = dat.quality %>% arrange(desc(mean.comparator)) %>%
-  distinct_at(vars(c(comparator)), .keep_all = TRUE)
+  distinct_at(vars(c(comparator)), .keep_all = TRUE) %>% 
+  dplyr::select(-id)
 
 p = quality.means %>% 
   ggplot(aes(x=mean.comparator)) +
@@ -243,25 +250,14 @@ p = quality.means %>%
   theme(legend.position="none")
 p
 
-df.qual = quality.means %>% arrange(desc(mean.comparator))
-pids.qual = df.qual[1:3, ]$comparator
-qual.time = DATA$info %>% filter(prolific_id %in% pids.qual) %>%
-  dplyr::select(prolific_id, timeSpent)
-qual.time
+out.quality = quality.means %>% filter(mean.comparator > 0.5) 
 # remove
-df.out = qual.time %>%
-  add_column(id=rep(list(TRIALS), nrow(qual.time))) %>%
+df.out =  out.quality %>% dplyr::select(mean.comparator, comparator) %>%
+  rename(prolific_id=comparator) %>% 
+  add_column(id=rep(list(TRIALS), nrow(out.quality))) %>%
   unnest(c(id)) %>% group_by(prolific_id) %>%
   filter(id != "ind2")
 write_csv(df.out, paste(DATA$result_dir, "out_by_quality.csv", sep=fs))
-
-p = dat.quality %>% distinct_at(vars(c(id)), .keep_all = TRUE) %>% 
-  ggplot(aes(x=mean.id)) +
-  geom_density() +
-  geom_jitter(aes(y=0, color=id), width=0, height=0.2) +
-  theme(legend.position="bottom") +
-  ggtitle("avg data quality values across stimuili")
-p
 ```
 
 # Training Data

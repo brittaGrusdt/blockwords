@@ -42,7 +42,7 @@ sample_dirichlet <- function(params, n=1000){
   return(tables %>% add_column(cn="cn1"))
 }
 
-makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augmented=FALSE) {
+makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augmented) {
   tables.dirichlet = sample_dirichlet(df.params.fit)
   formatted.dirichlet = format_and_save_fitted_tables(
     tables.dirichlet, df.params.fit, result_dir, fn_suffix, add_augmented
@@ -66,10 +66,37 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
     group_by(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`)
   # all sampled tables retained but table_id should map to unique tables
   tables.generated$table_id = tables.generated %>%
-    group_indices(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`)
+    group_indices(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`) 
   
   if(add_augmented) {
-    tables.generated = add_augmented_to_sampled_tables(tables.generated, dir_empiric, fn)
+    save_mapping_to = paste(dir_empiric, fs, "mapping-tables-", fn, "-augmented-ids.rds", sep="")
+    tbls = add_augmented_to_sampled_tables(
+      tables.generated %>% rowid_to_column() %>% group_by(rowid), dir_empiric
+    ) %>%
+      distinct_at(vars(c(rowid, AC, `A-C`, `-AC`, `-A-C`)), .keep_all = TRUE) %>%
+      dplyr::select(-rowid, -augmented, -orig_table, -only_augmented)
+    # for empirical tables add stimulus for which participants created table
+    # add this as list (we dont want to expand nb of tables here, just need the info)
+    tbls.generated = tbls %>% rowid_to_column() %>% group_by(rowid) %>% 
+      rename(stimulus.orig=stimulus) %>%
+      unnest_longer(p_id, indices_include = FALSE) %>% 
+      separate("p_id", into=c("prolific_id", "rel", "prior"), sep="_") %>%
+      unite("stimulus", c("rel", "prior"), sep="_") %>%
+      dplyr::select(-prolific_id) %>% 
+      filter(stimulus != "ind2") %>%  # don't include training-test trial!!
+      distinct_at(vars(c(rowid, stimulus.orig)), .keep_all = TRUE)
+      
+    tables.generated = tbls.generated %>% group_by(rowid) %>% 
+      mutate(stimulus.participants=list(stimulus)) %>%
+      distinct() %>% ungroup() %>% dplyr::select(-rowid)
+    # make sure that tables without empirical match are retained (for set 
+    # of input tables, we still want them, just not for speaker input), 
+    # for computation of ll we want the original stimulus!
+    tables.generated = tables.generated %>% 
+        mutate(stimulus = case_when(stimulus == "NA_NA" ~ stimulus.orig,
+                                    TRUE ~ stimulus))
+    
+    save_data(tables.generated, save_mapping_to)
     fn = paste(fn, "-with-augmented", sep="")
   }
   # save tables for input to webppl model (with likelihoods) ------------------
@@ -87,6 +114,12 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
       mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
              ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
       ungroup() %>% dplyr::select(-rowid)
+    
+    # undo stimulus change for ll-computation
+    if(add_augmented) {
+      tables.toWPPL = tables.toWPPL %>% dplyr::select(-stimulus) %>% 
+        rename(stimulus=stimulus.participants)
+    }
     
   } else if(startsWith(fn, "latent-mixture")) {
     tbls = tables.model %>% group_by(stimulus) %>% 
@@ -116,19 +149,7 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
              ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
       dplyr::select(-rowid)
     
-  } else if(fn=="model-tables") {
-    indep_sigma <- configure(c("model_tables"))$indep_sigma
-    tables = tables.model %>% 
-      group_by(table_id) %>% 
-      mutate(vs=list(c("AC", "A-C", "-AC", "-A-C")),
-             ps=list(c(`AC`, `A-C`, `-AC`, `-A-C`))) %>% 
-      likelihood(indep_sigma)
-    params.tbl <- configure(c("model_tables"))
-    tbl.params =  list(n_best_cns = params.tbl$n_best_cns,
-                       cns = params.tbl$cns)
-    tables.toWPPL = tables_to_bns(tables, tbl.params)
-  }
-  else {
+  } else {
     stop("arg 'fn' must be one of: latent-mixture, dirichlet")
   }
   save_as = paste("tables-", fn, "-toWPPL.rds", sep="")

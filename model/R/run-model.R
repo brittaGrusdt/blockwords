@@ -6,8 +6,10 @@ source(here("model", "R", "helper-functions.R"))
 source(here("R", "utils.R"))
 source(here("R", "utils-exp2.R"))
 
-used_tables = "tables_model_filtered"
-# used_tables = "tables_dirichlet_filtered"
+# used_tables = "tables_model_filtered"
+used_tables = "tables_dirichlet_filtered"
+# used_tables = "tables_dirichlet_filtered_augmented" # is not saved in own folder!
+
 
 # this only makes a difference for the states given to the speaker, in case of
 # speaker_empirical_tables, these are *only* tables that were actually 

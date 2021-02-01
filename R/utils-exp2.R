@@ -350,7 +350,8 @@ average_predictions = function(dat.speaker, params, target_fn){
     pivot_longer(cols=starts_with("utt."), names_to="response",
                  names_prefix="utt.",values_to="probs")
   # get counts of how often each stimulus appears
-  if(str_detect(params$used_tables, "tables_model")){
+  if(str_detect(params$used_tables, "tables_model") |
+     params$used_tables == "tables_dirichlet_filtered_augmented"){
     # for model tables stimuli are matched to generated tables, i.e. they are not 
     # generated for particular stimuli as we do for dirichlets, which means 
     # that one table may map to several stimuli

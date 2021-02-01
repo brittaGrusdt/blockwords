@@ -221,39 +221,39 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   }
   # 6. participants who choose <= 3 different utterances AND whose total time
   # spent was less than 20 minutes
-  df.production.means = data.production %>% filter(id != "ind2") %>%
-    dplyr::select(response, prolific_id, id) %>% 
-    group_by(prolific_id, response) %>% 
-    mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
-    arrange(desc(ratio)) %>% distinct() %>%
-    mutate(response=as.factor(response))
-  # add time spent
-  dat.info = readRDS(paste(data.dir, "participants-info.rds", sep=fs))
-  df = left_join(df.production.means,
-                 data$info %>% dplyr::select(prolific_id, timeSpent), 
-                 by=c("prolific_id")) %>% 
-    mutate(timeSpent=round(timeSpent, 2))
-  df.sum = df %>%
-    dplyr::select(response, prolific_id, timeSpent) %>% distinct() %>%
-    group_by(prolific_id) %>% mutate(n.utt=n()) %>%
-    dplyr::select(-response) %>% distinct()
+  # df.production.means = data.production %>% filter(id != "ind2") %>%
+  #   dplyr::select(response, prolific_id, id) %>% 
+  #   group_by(prolific_id, response) %>% 
+  #   mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
+  #   arrange(desc(ratio)) %>% distinct() %>%
+  #   mutate(response=as.factor(response))
+  # # add time spent
+  # dat.info = readRDS(paste(data.dir, "participants-info.rds", sep=fs))
+  # df = left_join(df.production.means,
+  #                data$info %>% dplyr::select(prolific_id, timeSpent), 
+  #                by=c("prolific_id")) %>% 
+  #   mutate(timeSpent=round(timeSpent, 2))
+  # df.sum = df %>%
+  #   dplyr::select(response, prolific_id, timeSpent) %>% distinct() %>%
+  #   group_by(prolific_id) %>% mutate(n.utt=n()) %>%
+  #   dplyr::select(-response) %>% distinct()
   # remove all trials for these participants
-  trials = df$id %>% unique() %>% as.character()
-  df.freq_time = df.sum %>% filter(n.utt <= 3 & timeSpent < 20) %>%
-    dplyr::select(prolific_id)
-  out.freq_time = df.freq_time %>%
-    add_column(id=rep(list(trials), nrow(df.freq_time))) %>%
-    unnest(c(id)) %>% group_by(prolific_id)
+  # trials = df$id %>% unique() %>% as.character()
+  # df.freq_time = df.sum %>% filter(n.utt <= 3 & timeSpent < 20) %>%
+  #   dplyr::select(prolific_id)
+  # out.freq_time = df.freq_time %>%
+  #   add_column(id=rep(list(trials), nrow(df.freq_time))) %>%
+  #   unnest(c(id)) %>% group_by(prolific_id)
   
-  df.out = bind_rows(df.out, out.freq_time)
-  message(paste(length(out.freq_time$prolific_id %>% unique),
-                'participant(s) excluded due to <= 3 different utterance AND < 20 minutes.'))
-  # 7. Quality
+  # df.out = bind_rows(df.out, out.freq_time)
+  # message(paste(length(out.freq_time$prolific_id %>% unique),
+  #               'participant(s) excluded due to <= 3 different utterance AND < 20 minutes.'))
+  # 6. Quality
   if(!is.na(out.by_quality)) {
     out.qual = read_csv(paste(data.dir, "out_by_quality.csv", sep=fs)) %>%
       dplyr::select(prolific_id, id)
     message(paste(length(out.qual$prolific_id %>% unique),
-                  'participant(s) excluded due to large quality diff AND total time spent (very short/long).'))
+                  'participant(s) excluded due to large quality value.'))
     df.out = bind_rows(df.out, out.qual)
   }
 
@@ -293,7 +293,11 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   # fit dirichlet distributions to filtered data
   fn_suffix = "dirichlet-filtered"
   df.params.fit = run_fit_dirichlet(filtered_dir, exp.name, fn_suffix)
-  tables.dirichlet = makeDirichletTables(df.params.fit, filtered_dir, fn_suffix)
+  # df.params.fit = read_csv("./data/prolific/blockwords/filtered_data/params-fitted-dirichlet-filtered.csv") %>% add_column(p_cn=1, cn="cn1")
+  tables.dirichlet =
+    makeDirichletTables(df.params.fit, filtered_dir, fn_suffix, add_augmented=FALSE)
+  tables.dirichlet.with_augmented =
+    makeDirichletTables(df.params.fit, filtered_dir, fn_suffix, add_augmented=TRUE)
   # and check goodness of fits
   N_participants = df1$prolific_id %>% unique() %>% length()
   message("compute goodness of dirichlet fits ...")

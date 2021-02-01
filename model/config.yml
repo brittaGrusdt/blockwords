@@ -42,10 +42,19 @@ tables_dirichlet:
 tables_dirichlet_filtered:
   dir_empiric: "./data/prolific/blockwords/filtered_data"
   tables_empiric: "./model/data/tables-dirichlet-filtered-toWPPL.rds"
-  tables_mapping: "./model/data/mapping-tables-dirichlet-filtered-ids.rds"
   target_dir: "./model/results/tables-dirichlet-filtered"
   utts_path: "./model/data/utterances-dirichlet-filtered-tables.rds"
   target_fits: "params-fitted-dirichlet-filtered.csv"
+
+
+tables_dirichlet_filtered_augmented:
+  dir_empiric: "./data/prolific/blockwords/filtered_data"
+  tables_empiric: "./model/data/tables-dirichlet-filtered-with-augmented-toWPPL.rds"
+  target_dir: "./model/results/tables-dirichlet-filtered"
+  utts_path: "./model/data/utterances-dirichlet-filtered-tables.rds"
+  target_fits: "params-fitted-dirichlet-filtered.csv"
+  tables_mapping: "./model/data/mapping-tables-dirichlet-filtered-augmented-ids.rds"
+
 
 tables_latent_mixture:
   tables_empiric: ""
