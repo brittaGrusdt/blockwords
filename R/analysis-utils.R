@@ -221,33 +221,33 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   }
   # 6. participants who choose <= 3 different utterances AND whose total time
   # spent was less than 20 minutes
-  # df.production.means = data.production %>% filter(id != "ind2") %>%
-  #   dplyr::select(response, prolific_id, id) %>% 
-  #   group_by(prolific_id, response) %>% 
-  #   mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
-  #   arrange(desc(ratio)) %>% distinct() %>%
-  #   mutate(response=as.factor(response))
-  # # add time spent
-  # dat.info = readRDS(paste(data.dir, "participants-info.rds", sep=fs))
-  # df = left_join(df.production.means,
-  #                data$info %>% dplyr::select(prolific_id, timeSpent), 
-  #                by=c("prolific_id")) %>% 
-  #   mutate(timeSpent=round(timeSpent, 2))
-  # df.sum = df %>%
-  #   dplyr::select(response, prolific_id, timeSpent) %>% distinct() %>%
-  #   group_by(prolific_id) %>% mutate(n.utt=n()) %>%
-  #   dplyr::select(-response) %>% distinct()
+  df.production.means = data.production %>% filter(id != "ind2") %>%
+    dplyr::select(response, prolific_id, id) %>%
+    group_by(prolific_id, response) %>%
+    mutate(n=n()) %>% group_by(prolific_id) %>% mutate(N=n(), ratio=n/N) %>%
+    arrange(desc(ratio)) %>% distinct() %>%
+    mutate(response=as.factor(response))
+  # add time spent
+  dat.info = readRDS(paste(data.dir, "participants-info.rds", sep=fs))
+  df = left_join(df.production.means,
+                 data$info %>% dplyr::select(prolific_id, timeSpent),
+                 by=c("prolific_id")) %>%
+    mutate(timeSpent=round(timeSpent, 2))
+  df.sum = df %>%
+    dplyr::select(response, prolific_id, timeSpent) %>% distinct() %>%
+    group_by(prolific_id) %>% mutate(n.utt=n()) %>%
+    dplyr::select(-response) %>% distinct()
   # remove all trials for these participants
-  # trials = df$id %>% unique() %>% as.character()
-  # df.freq_time = df.sum %>% filter(n.utt <= 3 & timeSpent < 20) %>%
-  #   dplyr::select(prolific_id)
-  # out.freq_time = df.freq_time %>%
-  #   add_column(id=rep(list(trials), nrow(df.freq_time))) %>%
-  #   unnest(c(id)) %>% group_by(prolific_id)
-  
-  # df.out = bind_rows(df.out, out.freq_time)
-  # message(paste(length(out.freq_time$prolific_id %>% unique),
-  #               'participant(s) excluded due to <= 3 different utterance AND < 20 minutes.'))
+  trials = df$id %>% unique() %>% as.character()
+  df.freq_time = df.sum %>% filter(n.utt <= 3 & timeSpent < 20) %>%
+    dplyr::select(prolific_id)
+  out.freq_time = df.freq_time %>%
+    add_column(id=rep(list(trials), nrow(df.freq_time))) %>%
+    unnest(c(id)) %>% group_by(prolific_id)
+
+  df.out = bind_rows(df.out, out.freq_time)
+  message(paste(length(out.freq_time$prolific_id %>% unique),
+                'participant(s) excluded due to <= 3 different utterance AND < 20 minutes.'))
   # 6. Quality
   if(!is.na(out.by_quality)) {
     out.qual = read_csv(paste(data.dir, "out_by_quality.csv", sep=fs)) %>%

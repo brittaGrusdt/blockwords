@@ -216,14 +216,14 @@ df.sum = df %>%
 
 df.sum %>% filter(n.utt <= 3)
 
-df.out = df.sum %>% 
+out.freq_time = df.sum %>% 
   filter(n.utt <= 3 & timeSpent < 20) 
-df.out
+out.freq_time
 
 # remove all trials for these participants
-# df.out = df.out %>% dplyr::select(prolific_id) %>%
-#   add_column(id=rep(list(TRIALS), nrow(df.out))) %>%
-#   unnest(c(id)) %>% group_by(prolific_id)
+df.out = out.freq_time %>% dplyr::select(prolific_id) %>%
+  add_column(id=rep(list(TRIALS), nrow(df.out))) %>%
+  unnest(c(id)) %>% group_by(prolific_id)
 ```
 
 # Participants' slider rating for u in task 1 is 0 but u is produced in task 2
