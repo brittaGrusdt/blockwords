@@ -153,8 +153,8 @@ if(!use_filtered && plot_single_participants) {
   }
   
   # model predictions with theoretic/dirichlet-fitted tables (takes a while)
-  plotModelAndBehavioral("tables-model")
-  plotModelAndBehavioral("tables-dirichlet")
+  plotModelAndBehavioral("tables-model-filtered", c("independent_uh"))
+  plotModelAndBehavioral("tables-dirichlet-filtered-augmented", c("independent_uh"))
   
   # normalized slider Ratings with produced utterance
   fn = paste(DATA$plot_dir, "by-participants-normalized-ratings-with-production", sep=fs)

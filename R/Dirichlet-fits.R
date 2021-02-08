@@ -42,7 +42,7 @@ sample_dirichlet <- function(params, n=1000){
   return(tables %>% add_column(cn="cn1"))
 }
 
-makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augmented) {
+makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augmented=TRUE) {
   tables.dirichlet = sample_dirichlet(df.params.fit)
   formatted.dirichlet = format_and_save_fitted_tables(
     tables.dirichlet, df.params.fit, result_dir, fn_suffix, add_augmented
@@ -69,12 +69,30 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
     group_indices(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`) 
   
   if(add_augmented) {
-    save_mapping_to = paste(dir_empiric, fs, "mapping-tables-", fn, "-augmented-ids.rds", sep="")
-    tbls = add_augmented_to_sampled_tables(
+    save_mapping_to = here("model", "data", paste("mapping-tables-", fn, "-augmented-ids.rds", sep=""))
+    tbls.all = add_augmented_to_sampled_tables(
       tables.generated %>% rowid_to_column() %>% group_by(rowid), dir_empiric
-    ) %>%
+    ) 
+    tbls = tbls.all$joint %>% group_by(stimulus) %>% 
       distinct_at(vars(c(rowid, AC, `A-C`, `-AC`, `-A-C`)), .keep_all = TRUE) %>%
-      dplyr::select(-rowid, -augmented, -orig_table, -only_augmented)
+      dplyr::select(-rowid, -augmented, -only_augmented)
+    
+    # --------- add empiric tables that did not match --------------- #
+    # tid.max = tbls$table_id %>% max()
+    # dirichlets = tables.generated$stimulus %>% unique()
+    # tbls.miss = tbls.all$missing %>% rowid_to_column() %>% group_by(rowid) %>%
+    #   add_column(empirical=TRUE, dirichlets=list(dirichlets)) %>%
+    #   unnest_longer(c(dirichlets))
+    # # get log likelihood for each table and dirichlet distribution
+    # tbls.miss.ll = tbls.miss %>% likelihood_dirichlets(params.fit) %>% bind_rows() 
+    # # but only take the best dirichlet per table
+    # tbls.miss.ll = tbls.miss.ll %>% group_by(rowid) %>% mutate(best_ll=max(ll)) %>%
+    #     filter(ll == best_ll) %>% dplyr::select(-best_ll)
+    # tbls = bind_rows(
+    #   tbls, tbls.miss.ll %>% rowid_to_column("table_id") %>% mutate(table_id=table_id + tid.max)
+    # ) %>% dplyr::select(-rowid, -ll)
+    # ll is computed later again, this is quick+dirty fix 
+    # -----------------------------------------------------------------#
     # for empirical tables add stimulus for which participants created table
     # add this as list (we dont want to expand nb of tables here, just need the info)
     tbls.generated = tbls %>% rowid_to_column() %>% group_by(rowid) %>% 
@@ -185,6 +203,19 @@ ll_dirichlet = function(tables, params){
   df = likelihoods %>% summarize(ll=sum(ll.table))
   return(df)
 }
+
+# ** computes log likelihood for all given dirichlet distributions # ** 
+likelihood_dirichlets <- function(tbls, params){
+  df.ll = group_map(tbls %>% group_by(dirichlets), function(df.dir, dirichlet.stim){
+    stim = dirichlet.stim$dirichlets
+    par = params %>% filter(id == (!! stim))
+    ll = add_ll_dirichlet(df.dir %>% dplyr::select(AC, `A-C`, `-AC`, `-A-C`), par)
+    df.dir %>% add_column(ll=ll$`ll.table`, stimulus=(!! stim))
+  })
+  return(df.ll)
+}
+
+
 
 # fit single dirichlet distribution for each stimulus ---------------------
 # @arg fn_suffix: "dirichlet", "dirichlet-filtered"

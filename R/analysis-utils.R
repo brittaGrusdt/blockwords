@@ -274,7 +274,10 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   save_data(df.filtered$exp1_orig_exp2,
             paste(filtered_dir, "human-exp1-orig-exp2.rds", sep=fs))
   
-  df.info = anti_join(data$info, df.out %>% dplyr::select(prolific_id), by=c("prolific_id"))
+  out.all_trials = df.out %>% group_by(prolific_id) %>% mutate(n=n()) %>%
+    filter(n==14) %>% dplyr::select(prolific_id) %>% distinct()
+  
+  df.info = anti_join(data$info, out.all_trials, by=c("prolific_id"))
   save_data(df.info, paste(filtered_dir, "participants-info.rds", sep=fs))
   
   # also save with all data (and with empiric-ids)
@@ -294,8 +297,6 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   fn_suffix = "dirichlet-filtered"
   df.params.fit = run_fit_dirichlet(filtered_dir, exp.name, fn_suffix)
   # df.params.fit = read_csv("./data/prolific/blockwords/filtered_data/params-fitted-dirichlet-filtered.csv") %>% add_column(p_cn=1, cn="cn1")
-  tables.dirichlet =
-    makeDirichletTables(df.params.fit, filtered_dir, fn_suffix, add_augmented=FALSE)
   tables.dirichlet.with_augmented =
     makeDirichletTables(df.params.fit, filtered_dir, fn_suffix, add_augmented=TRUE)
   # and check goodness of fits

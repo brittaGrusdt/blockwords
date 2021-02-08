@@ -248,10 +248,10 @@ analyze_tables <- function(path, theta, TABLES=tibble()){
 
   print('#true likely+literal')
   literals <- TABLES.wide %>%
-    mutate(a=`AC` + `A-C` > 0.5,
-           c=`AC` + `-AC` > 0.5,
-           na=`-AC` + `-A-C` > 0.5,
-           nc=`A-C` + `-A-C` > 0.5)
+    mutate(a=`AC` + `A-C` > 0.25,
+           c=`AC` + `-AC` > 0.25,
+           na=`-AC` + `-A-C` > 0.25,
+           nc=`A-C` + `-A-C` > 0.25)
   print(paste("likely A", round(literals %>% filter(a) %>% nrow / n.wide, 2)))
   print(paste("likely C", round(literals %>% filter(c) %>% nrow / n.wide, 2)))
   print(paste("likely -A", round(literals %>% filter(na) %>% nrow / n.wide, 2)))

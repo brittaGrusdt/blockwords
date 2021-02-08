@@ -68,7 +68,8 @@ chunk_utterances <- function(data, utts_kept=c()){
       utterance %in% utts_kept ~ utterance,
       str_detect(utterance, "might") ~ "might + literal",
       str_detect(utterance, "if") ~ levels[[2]],
-      (str_detect(utterance, "and") | str_detect(utterance, "but")) ~ "conjunction",
+      (str_detect(utterance, "and") | str_detect(utterance, "but") |
+       str_detect(utterance, "neither") | str_detect(utterance, "both")) ~ "conjunction",
       TRUE ~ "literal"
     ),
     utterance = factor(utterance, levels=
@@ -164,7 +165,52 @@ filter_by_model_params <- function(df, params){
   return(df)
 }
 
-# ** computes likelihood for independent net and  A->C / C->A for dep nets**
+
+# ** computes log likelihood for single given net**
+likelihood_single_cn <- function(df_wide, sigma_indep, a=10, b=1){
+  # prepare
+  df <- df_wide %>%
+    compute_cond_prob("P(C|A)") %>% rename(p_c_given_a=p) %>% 
+    compute_cond_prob("P(C|-A)") %>% rename(p_c_given_na=p) %>% 
+    compute_cond_prob("P(A|C)") %>% rename(p_a_given_c=p) %>% 
+    compute_cond_prob("P(A|-C)") %>% rename(p_a_given_nc=p) %>%
+    mutate(pa=AC+`A-C`, pc=AC+`-AC`,
+           ind.lower=case_when(1-(pa+pc) < 0 ~ abs(1-(pa+pc)),
+                               TRUE ~ 0),
+           ind.upper=pmin(pa, pc))
+  
+  df <- df %>% 
+    mutate(
+      p_nc_given_a = 1 - p_c_given_a,
+      p_na_given_c = 1 - p_a_given_c,
+      p_nc_given_na = 1 - p_c_given_na,
+      p_na_given_nc = 1 - p_a_given_nc
+    )
+  
+  df.ll = group_map(df %>% group_by(cn), function(df.cn, cn){
+    if(cn$cn == "A || C"){
+      df.cn = df.cn %>% mutate(ll=log(dtruncnorm(x=`AC`, a=ind.lower, b=ind.upper, mean=pa*pc, sd=sigma_indep)))
+    }else if(cn$cn=="A implies C"){
+      df.cn = df.cn %>% mutate(ll=log(dbeta(p_c_given_a, a, b))+log(dbeta(p_c_given_na, b, a)))
+    }else if(cn$cn=="A implies -C"){
+      df.cn = df.cn %>% mutate(ll=log(dbeta(p_nc_given_a, a, b)) + log(dbeta(p_nc_given_na, b, a)))
+    }else if(cn$cn=="C implies A"){
+      df.cn = df.cn %>% mutate(ll=log(dbeta(p_a_given_c, a, b)) + log(dbeta(p_a_given_nc, b, a)))
+    }else if(cn$cn=="C implies -A"){
+      df.cn = df.cn %>% mutate(ll=log(dbeta(p_na_given_c, a, b)) + log(dbeta(p_na_given_nc, b, a)))
+    }
+    df.cn %>%
+      dplyr::select(-p_c_given_na, -p_c_given_a, -p_a_given_c, -p_a_given_nc, -pa, -pc,
+                  -p_nc_given_a, -p_na_given_c, -p_nc_given_na, -p_na_given_nc) %>%
+    add_column(cn=cn$cn)
+  })
+  return(df.ll)
+}
+
+
+
+
+# ** computes log likelihood for independent net and  A->C / C->A for dep nets**
 likelihood <- function(df_wide, sigma_indep, a=10, b=1){
   # prepare
   df <- df_wide %>%

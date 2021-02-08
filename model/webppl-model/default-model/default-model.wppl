@@ -1,5 +1,5 @@
 // Parameters
-globalStore.thresholds = {theta: data["theta"][0], theta_likely : 0.5}
+globalStore.thresholds = {theta: data["theta"][0], theta_likely : 0.25}
 
 // states + utterances
 globalStore.cns = data["cns"]
@@ -10,7 +10,7 @@ var tables_list = data["tables"]
 globalStore.bns = map(function(obj){
   var p = Categorical({"vs": obj["vs"], "ps": obj["ps"]})
   return {
-    bn_id: obj.table_id, Table: p, cn: obj.cn, ll: obj.ll, stimulus:obj.stimulus
+    bn_id: obj.table_id, Table: p, cn: obj.cn, ll: obj.ll //stimulus:obj.stimulus
   }
 }, tables_list)
 
