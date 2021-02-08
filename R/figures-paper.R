@@ -262,7 +262,7 @@ p = df.all %>%
   geom_jitter(aes(color=prolific_id), width=0.1, height = 0, alpha=0.5) +
   geom_hline(aes(yintercept=0.7), alpha=0.5) +
   theme_classic() +
-  theme(legend.position="none", l) +
+  theme(legend.position="none") +
   labs(y="density slider rating", x="outcome") +
   facet_wrap(~uttered)
 
