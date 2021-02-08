@@ -6,10 +6,8 @@ source(here("model", "R", "helper-functions.R"))
 source(here("R", "utils.R"))
 source(here("R", "utils-exp2.R"))
 
-# used_tables = "tables_model_filtered"
-used_tables = "tables_dirichlet_filtered"
-# used_tables = "tables_dirichlet_filtered_augmented" # is not saved in own folder!
-
+# used_tables = "tables_model_filtered_augmented"
+used_tables = "tables_dirichlet_filtered_augmented"
 
 # this only makes a difference for the states given to the speaker, in case of
 # speaker_empirical_tables, these are *only* tables that were actually 
@@ -26,12 +24,13 @@ print(paste("tables read from:", params$tables_empiric))
 # specify bayes nets for which speaker distributions will be computed
 # for each stimulus sample tables from fitted distributions, i.e. from 
 # set of input tables
-params$tables = tables %>% ungroup %>%
-  dplyr::select(table_id, ps, vs, stimulus, ll, cn)
+params$tables = tables %>% ungroup %>% dplyr::select(table_id, ps, vs, stimulus, ll, cn)
 
 # specify input states (subset of all states) for which speaker predictions are computed!
 params$bns_sampled = tables %>% dplyr::select(table_id, stimulus) %>% 
   group_by(table_id, stimulus) %>% summarize(n=n(), .groups="drop_last")
+
+# get model prediction for each distinct input table
 params$bn_ids = params$bns_sampled %>% pull(table_id) %>% unique()
 
 ## Generate/Retrieve utterances
@@ -55,15 +54,11 @@ posterior <- run_webppl(params$model_path, params)
 
 # restructure data and save
 if(params$level_max == "speaker") {
-  speaker <- posterior %>% structure_speaker_data(params) %>% group_by(stimulus)
+  speaker <- posterior %>% structure_speaker_data(params)
   res.avg = average_predictions(speaker, params, "model-avg-predictions")
-  
-  # for all input states, get model prediction along with behavioral observations
-  # for dirichlet now we only look at averages, if we want to match tables,
-  # use add_augmented when sampling dirichlet tables (makeDirichletTables)
-  if(str_detect(used_tables, "tables_model")){
-    res.behav_model = join_model_behavioral_data(speaker, params);
-  }
+  #for all input states, get model prediction along with behavioral observations
+  # (for poss.augmented empiricall observed tables that are in prior)
+  res.behav_model = join_model_behavioral_data(speaker, params);
   
 } else if(params$level_max %in% c("priorN")){
     data <- structure_bns(posterior, params)

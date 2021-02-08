@@ -297,8 +297,7 @@ filter_data = function(data.dir, exp.name, out.by_comments=NA, out.by_quality=NA
   fn_suffix = "dirichlet-filtered"
   df.params.fit = run_fit_dirichlet(filtered_dir, exp.name, fn_suffix)
   # df.params.fit = read_csv("./data/prolific/blockwords/filtered_data/params-fitted-dirichlet-filtered.csv") %>% add_column(p_cn=1, cn="cn1")
-  tables.dirichlet.with_augmented =
-    makeDirichletTables(df.params.fit, filtered_dir, fn_suffix, add_augmented=TRUE)
+  tables.dirichlet.with_augmented = makeDirichletTables(df.params.fit, filtered_dir, fn_suffix)
   # and check goodness of fits
   N_participants = df1$prolific_id %>% unique() %>% length()
   message("compute goodness of dirichlet fits ...")

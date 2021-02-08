@@ -138,9 +138,8 @@ p.ex2 <- dat %>% filter(id == (!! stim2)) %>%
 p.ex2
 
 # Averages ----------------------------------------------------------------
-df.dirichlet = plotAveragePredictions("tables-dirichlet-filtered-augmented",
-                                      DATA$result_dir)
-df.model = plotAveragePredictions("tables-model-filtered", DATA$result_dir)
+df.dirichlet = plotAveragePredictions("tables-dirichlet-filtered-augmented", DATA$result_dir)
+df.model = plotAveragePredictions("tables-model-filtered-augmented", DATA$result_dir)
 
 results.joint = bind_rows(
   df.dirichlet %>% add_column(predictor="situation-specific prior"),
@@ -199,7 +198,6 @@ results.joint.long.types = results.joint.long %>%
                             utt.type=="literal" ~ "literal",
                             utt.type=="conjunction" ~ "AND"),
          utt.type=factor(utt.type, levels=c("might+literal", "IF", "literal", "AND")))
-# standard errors?!
 
 p.bars1 = results.joint.long.types %>% filter(p > 0) %>% arrange(desc(p)) %>% 
   filter(stimulus == (!! stim1)) %>%

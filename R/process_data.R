@@ -107,9 +107,6 @@ save_data(prior.quality, paste(result_dir, "test-data-prior-quality.rds", sep=fs
 # source(here("R", "analysis-utils.R"))
 # df.filtered = filter_data(result_dir, exp_name, "out_by_comments.csv", "out_by_quality.csv")
 
-# generate theoretic model tables (as in paper) and match with experimental data 
-# tables.model = makeModelTables(dir_empiric=result_dir, use_filtered=FALSE)
-
 # todo: implement latent mixture
 # df.params.fit = run_fit_latent_mixture(result_dir, exp_name, "cns")
 # res.goodness = compute_goodness_latent_mixture(params, result_dir, N_participants, 100)

@@ -42,19 +42,17 @@ sample_dirichlet <- function(params, n=1000){
   return(tables %>% add_column(cn="cn1"))
 }
 
-makeDirichletTables = function(df.params.fit, result_dir, fn_suffix, add_augmented=TRUE) {
+makeDirichletTables = function(df.params.fit, result_dir, fn_suffix) {
   tables.dirichlet = sample_dirichlet(df.params.fit)
   formatted.dirichlet = format_and_save_fitted_tables(
-    tables.dirichlet, df.params.fit, result_dir, fn_suffix, add_augmented
+    tables.dirichlet, df.params.fit, result_dir, fn_suffix
   )
   return(formatted.dirichlet)
 }
 
-# brings sampled tables into format for webppl model and if specified,
-# add augmemted tables to sampled tables 
-# @arg fn: dirichlet, dirichlet-filtered, model-tables, latent-mixture, latenet-mixture-filtered
-format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn,
-                                         add_augmented=FALSE){
+# adds augmented tables to sampled tables and brings them into format for webppl model 
+# @arg fn: dirichlet, dirichlet-filtered, latent-mixture, latenet-mixture-filtered
+format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn){
   # table_ids are unique with respect to table, but not wrt stimulus, i.e.
   # a single table_id may appear for different stimuli
   tables.generated =  tables.fit %>% 
@@ -68,55 +66,54 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
   tables.generated$table_id = tables.generated %>%
     group_indices(`AC.round`, `A-C.round`, `-AC.round`, `-A-C.round`) 
   
-  if(add_augmented) {
-    save_mapping_to = here("model", "data", paste("mapping-tables-", fn, "-augmented-ids.rds", sep=""))
-    tbls.all = add_augmented_to_sampled_tables(
-      tables.generated %>% rowid_to_column() %>% group_by(rowid), dir_empiric
-    ) 
-    tbls = tbls.all$joint %>% group_by(stimulus) %>% 
-      distinct_at(vars(c(rowid, AC, `A-C`, `-AC`, `-A-C`)), .keep_all = TRUE) %>%
-      dplyr::select(-rowid, -augmented, -only_augmented)
+  save_mapping_to = here("model", "data", paste("mapping-tables-", fn, "-augmented-ids.rds", sep=""))
+  tbls.all = add_augmented_to_sampled_tables(
+    tables.generated %>% rowid_to_column() %>% group_by(rowid), dir_empiric
+  ) 
+  tbls = tbls.all$joint %>% group_by(stimulus) %>% 
+    distinct_at(vars(c(rowid, AC, `A-C`, `-AC`, `-A-C`)), .keep_all = TRUE) %>%
+    dplyr::select(-rowid, -augmented, -only_augmented)
+  
+  # --------- add empiric tables that did not match --------------- #
+  # tid.max = tbls$table_id %>% max()
+  # dirichlets = tables.generated$stimulus %>% unique()
+  # tbls.miss = tbls.all$missing %>% rowid_to_column() %>% group_by(rowid) %>%
+  #   add_column(empirical=TRUE, dirichlets=list(dirichlets)) %>%
+  #   unnest_longer(c(dirichlets))
+  # # get log likelihood for each table and dirichlet distribution
+  # tbls.miss.ll = tbls.miss %>% likelihood_dirichlets(params.fit) %>% bind_rows() 
+  # # but only take the best dirichlet per table
+  # tbls.miss.ll = tbls.miss.ll %>% group_by(rowid) %>% mutate(best_ll=max(ll)) %>%
+  #     filter(ll == best_ll) %>% dplyr::select(-best_ll)
+  # tbls = bind_rows(
+  #   tbls, tbls.miss.ll %>% rowid_to_column("table_id") %>% mutate(table_id=table_id + tid.max)
+  # ) %>% dplyr::select(-rowid, -ll)
+  # ll is computed later again, this is quick+dirty fix 
+  # -----------------------------------------------------------------#
+  # for empirical tables add stimulus for which participants created table
+  # add this as list (we dont want to expand nb of tables here, just need the info)
+  tbls.generated = tbls %>% rowid_to_column() %>% group_by(rowid) %>% 
+    rename(stimulus.orig=stimulus) %>%
+    unnest_longer(p_id, indices_include = FALSE) %>% 
+    separate("p_id", into=c("prolific_id", "rel", "prior"), sep="_") %>%
+    unite("stimulus", c("rel", "prior"), sep="_") %>%
+    dplyr::select(-prolific_id) %>% 
+    filter(stimulus != "ind2") %>%  # don't include training-test trial!!
+    distinct_at(vars(c(rowid, stimulus.orig)), .keep_all = TRUE)
     
-    # --------- add empiric tables that did not match --------------- #
-    # tid.max = tbls$table_id %>% max()
-    # dirichlets = tables.generated$stimulus %>% unique()
-    # tbls.miss = tbls.all$missing %>% rowid_to_column() %>% group_by(rowid) %>%
-    #   add_column(empirical=TRUE, dirichlets=list(dirichlets)) %>%
-    #   unnest_longer(c(dirichlets))
-    # # get log likelihood for each table and dirichlet distribution
-    # tbls.miss.ll = tbls.miss %>% likelihood_dirichlets(params.fit) %>% bind_rows() 
-    # # but only take the best dirichlet per table
-    # tbls.miss.ll = tbls.miss.ll %>% group_by(rowid) %>% mutate(best_ll=max(ll)) %>%
-    #     filter(ll == best_ll) %>% dplyr::select(-best_ll)
-    # tbls = bind_rows(
-    #   tbls, tbls.miss.ll %>% rowid_to_column("table_id") %>% mutate(table_id=table_id + tid.max)
-    # ) %>% dplyr::select(-rowid, -ll)
-    # ll is computed later again, this is quick+dirty fix 
-    # -----------------------------------------------------------------#
-    # for empirical tables add stimulus for which participants created table
-    # add this as list (we dont want to expand nb of tables here, just need the info)
-    tbls.generated = tbls %>% rowid_to_column() %>% group_by(rowid) %>% 
-      rename(stimulus.orig=stimulus) %>%
-      unnest_longer(p_id, indices_include = FALSE) %>% 
-      separate("p_id", into=c("prolific_id", "rel", "prior"), sep="_") %>%
-      unite("stimulus", c("rel", "prior"), sep="_") %>%
-      dplyr::select(-prolific_id) %>% 
-      filter(stimulus != "ind2") %>%  # don't include training-test trial!!
-      distinct_at(vars(c(rowid, stimulus.orig)), .keep_all = TRUE)
-      
-    tables.generated = tbls.generated %>% group_by(rowid) %>% 
-      mutate(stimulus.participants=list(stimulus)) %>%
-      distinct() %>% ungroup() %>% dplyr::select(-rowid)
-    # make sure that tables without empirical match are retained (for set 
-    # of input tables, we still want them, just not for speaker input), 
-    # for computation of ll we want the original stimulus!
-    tables.generated = tables.generated %>% 
-        mutate(stimulus = case_when(stimulus == "NA_NA" ~ stimulus.orig,
-                                    TRUE ~ stimulus))
-    
-    save_data(tables.generated, save_mapping_to)
-    fn = paste(fn, "-with-augmented", sep="")
-  }
+  tables.generated = tbls.generated %>% group_by(rowid) %>% 
+    mutate(stimulus.participants=list(stimulus)) %>%
+    distinct() %>% ungroup() %>% dplyr::select(-rowid)
+  # make sure that tables without empirical match are retained (for set 
+  # of input tables, we still want them, just not for speaker input), 
+  # for computation of ll we want the original stimulus!
+  tables.generated = tables.generated %>% 
+      mutate(stimulus = case_when(stimulus == "NA_NA" ~ stimulus.orig,
+                                  TRUE ~ stimulus))
+  
+  save_data(tables.generated, save_mapping_to)
+  fn = paste(fn, "-with-augmented", sep="")
+  
   # save tables for input to webppl model (with likelihoods) ------------------
   tables.model = tables.generated %>% ungroup %>% dplyr::select(-ends_with(".round"))
   if(startsWith(fn, "dirichlet")){
@@ -134,10 +131,8 @@ format_and_save_fitted_tables = function(tables.fit, params.fit, dir_empiric, fn
       ungroup() %>% dplyr::select(-rowid)
     
     # undo stimulus change for ll-computation
-    if(add_augmented) {
-      tables.toWPPL = tables.toWPPL %>% dplyr::select(-stimulus) %>% 
-        rename(stimulus=stimulus.participants)
-    }
+    tables.toWPPL = tables.toWPPL %>% dplyr::select(-stimulus) %>% 
+      rename(stimulus=stimulus.participants)
     
   } else if(startsWith(fn, "latent-mixture")) {
     tbls = tables.model %>% group_by(stimulus) %>% 

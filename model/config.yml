@@ -20,21 +20,12 @@ default:
 # only add new variables, since if more than two config-ids are loaded
 # default value is taken again if it does not appear in a later loaded config-id,
 # although it had been overwritten in a previously loaded config-id
-tables_model_filtered:
+tables_model_filtered_augmented:
   dir_empiric: "./data/prolific/blockwords/filtered_data"
-  tables_empiric: "./model/data/tables-model-empirical-filtered.rds"
-  tables_mapping: "./model/data/mapping-tables-model-ids-empirical-filtered.rds"
-  target_dir: "./model/results/tables-model-filtered"
+  tables_empiric: "./model/data/tables-model-empirical-filtered-with-augmented-toWPPL.rds"
+  target_dir: "./model/results/tables-model-filtered-augmented"
   utts_path: "./model/data/utterances-model-tables.rds"
-
-
-tables_dirichlet_filtered:
-  dir_empiric: "./data/prolific/blockwords/filtered_data"
-  tables_empiric: "./model/data/tables-dirichlet-filtered-toWPPL.rds"
-  target_dir: "./model/results/tables-dirichlet-filtered"
-  utts_path: "./model/data/utterances-dirichlet-filtered-tables.rds"
-  target_fits: "params-fitted-dirichlet-filtered.csv"
-  tables_mapping: "./model/data/mapping-tables-dirichlet-filtered-ids.rds"
+  tables_mapping: "./model/data/mapping-tables-model-empirical-filtered-augmented-ids.rds"
 
 
 tables_dirichlet_filtered_augmented:
@@ -103,15 +94,15 @@ model_tables:
 # match generated theoretic tables with all experimental data
 model_input_all:
   target_dir: "./model/data"
-  tables_path: "tables-model-empirical-all.rds"
-  target_params: "params-tables-model-empirical-all.rds"
-  target_mapping: "mapping-tables-model-ids-empirical-all.rds"
+  tables_path: "tables-model-empirical-all-with-augmented-toWPPL.rds"
+  target_params: "params-tables-model-empirical-all-augmented.rds"
+  target_mapping: "mapping-tables-model-empirical-all-augmented-ids.rds"
   
 # match generated theoretic tables only with filtered experimental data
 model_input_filtered:
   target_dir: "./model/data"
-  tables_path: "tables-model-empirical-filtered.rds"
-  target_params: "params-tables-model-empirical-filtered.rds"
-  target_mapping: "mapping-tables-model-ids-empirical-filtered.rds"  
+  tables_path: "tables-model-empirical-filtered-with-augmented-toWPPL.rds"
+  target_params: "params-tables-model-empirical-filtered-augmented.rds"
+  target_mapping: "mapping-tables-model-empirical-filtered-augmented-ids.rds"  
 
 # there needs to be 1 blank final line!

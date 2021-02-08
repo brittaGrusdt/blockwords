@@ -338,41 +338,50 @@ task2_avg_per_stimulus = function(result_dir){
 average_predictions = function(dat.speaker, params, target_fn){
   # table_id can occur for different stimuli, model predictions were done only
   # based on table as stimulus doesnt have an influence on it!
+  # instead of n (integer count) repeat stimulus n times in list column
   bn_samples = params$bns_sampled %>% group_by(table_id, stimulus) %>%
     mutate(stimulus=list(rep(stimulus, n))) %>% dplyr::select(-n)
   df = dat.speaker %>% ungroup() %>% dplyr::select(cn, table_id, utterance, probs)
+  # each table id can appear in several stimuli
   df.model = left_join(df %>% group_by(table_id), bn_samples, by=c("table_id"))
   
   df.bn_samples = df.model %>%
-    group_by(table_id) %>% 
+    group_by(table_id) %>%
     pivot_wider(names_from="utterance", values_from="probs", names_prefix="utt.") %>%
-    unnest(c(stimulus)) %>% 
+    unnest(c(stimulus)) %>%
     pivot_longer(cols=starts_with("utt."), names_to="response",
                  names_prefix="utt.",values_to="probs")
   # get counts of how often each stimulus appears
-  if(str_detect(params$used_tables, "tables_model") |
-     params$used_tables == "tables_dirichlet_filtered_augmented"){
-    # for model tables stimuli are matched to generated tables, i.e. they are not 
-    # generated for particular stimuli as we do for dirichlets, which means 
+  if(str_detect(params$used_tables, "tables_model")  ||
+     params$used_tables == "tables_dirichlet_filtered_augmented") {
+    # for model tables stimuli are matched to generated tables, i.e. they are not
+    # generated for particular stimuli as we do for dirichlets, which means
     # that one table may map to several stimuli
-    df.bn_samples = df.bn_samples %>% rowid_to_column() %>%  unnest(c(stimulus)) %>% 
+    df.bn_samples = df.bn_samples %>% rowid_to_column() %>%  unnest(c(stimulus)) %>%
       distinct_at(vars(c(rowid, stimulus)), .keep_all = TRUE) %>%
       ungroup() %>% dplyr::select(-rowid)
+  }
+  # only consider tables that are empirically observed, for model-tables, stimulus
+  # for those that are not empirically observed is simply NA_NA, therefore no 
+  # filtering needed here
+  if(params$used_tables == "tables_dirichlet_filtered_augmented"){
+    mapping = readRDS(params$tables_mapping)
+    table_ids = mapping %>% filter(empirical) %>% pull(table_id)
+    df.bn_samples = df.bn_samples %>% filter(table_id %in% table_ids)
   }
   df.n_stim = df.bn_samples %>% group_by(stimulus) %>%
     summarize(n.stim=n()/20, .groups="drop_last")
   
-  model.avg.bn_samples = df.bn_samples %>% 
-    group_by(stimulus, response) %>% 
-    summarize(p=mean(probs), .groups="drop_last") %>%
-    translate_utterances() %>% 
+  model.avg.bn_samples = df.bn_samples %>%
+    group_by(stimulus, response) %>%
+    summarize(p=mean(probs), sd=sd(probs), .groups="drop_last") %>%
+    translate_utterances() %>%
     add_column(predictor="model") %>%
     rename(utterance=response) %>%
     group_by(stimulus) %>% mutate(best.utt=p==max(p))
   
   # add nb of stimuli that were included in average
   model.avg = left_join(model.avg.bn_samples, df.n_stim, by="stimulus")
-  
   save_data(model.avg, paste(params$target_dir, fs, target_fn, ".rds", sep=""))
   write_csv(model.avg, paste(params$target_dir, fs, target_fn, ".csv", sep=""))
   return(model.avg)
@@ -383,85 +392,47 @@ average_predictions = function(dat.speaker, params, target_fn){
 join_model_behavioral_data = function(dat.speaker, params){
   # 1. Map Model data to empirical tables
   # model only predicts speaker once per table_id! (indep.of stimulus/cn)
-  data.model <- dat.speaker %>%
-    group_by(table_id, cn) %>%
-    dplyr::select(table_id, cn, stimulus, AC, `A-C`, `-AC`, `-A-C`,
-                  utterance, probs)
-  
+  predictions <- dat.speaker %>% group_by(table_id) %>%
+    dplyr::select(table_id, utterance, probs)
   path_empiric = paste(params$dir_empiric, "tables-empiric-pids.rds", sep=fs)
   tables.empiric = readRDS(path_empiric)
   message(paste("read empiric data from", path_empiric))
   pids = tables.empiric %>% ungroup() %>%
-    dplyr::select(-bg, -b, -g, -none, -ends_with(".round")) %>% unnest(c(p_id))
-  
-  mapping.ids = readRDS(params$tables_mapping) %>% group_by(empirical_id)
-  orig.tables = mapping.ids %>% filter(orig_table) %>%
-    dplyr::select(empirical_id, table_id, AC, `A-C`, `-AC`, `-A-C`,
-                  ends_with(".round"))
-  
-  # iterate through all empirical ids, and note all table_ids that are associated 
-  # with that empirical id (as there are several since empirical tables were augmented)
-  ids = mapping.ids %>% ungroup() %>% dplyr::select(table_id, empirical_id)
-  empirical_ids = ids %>% pull(empirical_id) %>% unique()
+    dplyr::select(empirical_id, p_id) %>%
+    unnest(c(p_id)) %>% distinct()
+  # model predictions for observed tables (and augmented)
+  mapping.ids = readRDS(params$tables_mapping) %>%
+    dplyr::select(table_id, empirical_id, orig_table) %>% distinct()
   table_map = mapping.ids %>% group_by(empirical_id) %>%
     summarize(table_ids=list(table_id), .groups="drop_last")
-  
-  df = data.model %>% ungroup() %>% dplyr::select(table_id) %>% distinct() 
-  mapping=map_dfr(empirical_ids, function(id){
-    current = table_map %>% filter(empirical_id == id)
-    if(nrow(current) != 0){
-      table_ids =  current %>% unnest(c(table_ids)) %>% pull(table_ids)
-      dat = df %>% mutate(empirical_id=case_when(table_id %in% table_ids ~ id)) %>%
-        filter(!is.na(empirical_id))
-    } else {
-      dat = tibble()
-    }
-    return(dat)
-  });
-  predictions = data.model %>% ungroup() %>% 
-    dplyr::select(-AC, -`A-C`, -`-AC`, -`-A-C`, -cn) %>%
-    group_by(table_id)
-  # model predictions may contain predictions for tables that no participant had actually used!
-  # (empirical_id is NA)
-  res.model = left_join(predictions, mapping, by="table_id") %>% 
-    group_by(empirical_id) %>%
-    rename(response=utterance) %>%
+  tbls.model.not_emp = table_map %>% filter(is.na(empirical_id)) %>%
+    unnest(c(table_ids)) %>% pull(table_ids)
+  res.model = left_join(predictions %>% filter(!table_id %in% tbls.model.not_emp),
+                        mapping.ids, by="table_id") %>%
+    group_by(empirical_id) %>% rename(response=utterance) %>%
     translate_utterances() %>% group_by(empirical_id)
 
-  # merge empirical data with model predictions for states we have observations
-  # and model predictions for
-  # add data which participant used which empirical id in which trial
-  ids = left_join(pids, mapping, by="empirical_id") %>% group_by(empirical_id) %>%
+  # empirical observations mapped with corresponding table_ids
+  # add data which participant used which empirical id in which trial, 
+  ids = left_join(pids,
+    mapping.ids %>% filter(!is.na(empirical_id)) %>% dplyr::select(-orig_table),
+    by="empirical_id"
+  ) %>% group_by(empirical_id) %>%
     separate(p_id, into=c("prolific_id", "stimulus", "prior"), sep="_") %>%
     unite("id", c(stimulus, prior), sep="_")
 
   data.joint = readRDS(paste(params$dir_empiric, "human-exp1-smoothed-exp2.rds",
                              sep=.Platform$file.sep))
   res.behavioral = left_join(data.joint, ids, by=c("prolific_id", "id")) %>%
-    group_by(prolific_id, id) 
+    group_by(prolific_id, id) %>% filter(!is.na(table_id))
   
-  orig.ids = orig.tables$table_id
+  # merge empirical data with model predictions for states we have observations
+  # and model predictions for
   behav_model = left_join(
-    res.behavioral %>% filter(!is.na(table_id)),
-    res.model %>% rename(utterance=response, model.p=probs) %>% filter(!is.na(empirical_id)),
+    res.behavioral, res.model %>% rename(utterance=response, model.p=probs),
     by=c("table_id", "empirical_id", "utterance")
-  ) %>% group_by(prolific_id, id, table_id) %>%
-    mutate(orig.table=case_when(table_id %in% orig.ids ~ TRUE,
-                                TRUE ~ FALSE))
-  # compute utterance probabilities, only needed for empirical tables (in plots)
-  model.tables = mapping.ids %>% filter(!is.na(empirical_id)) %>% 
-    dplyr::select(table_id, empirical_id, AC, `A-C`, `-AC`, `-A-C`) %>%
-    rename(bg=AC, b=`A-C`, g=`-AC`, none=`-A-C`) %>% add_probs() %>% 
-    group_by(table_id) %>% 
-    pivot_longer(cols=c(bg, b, g, none, starts_with("p_")),
-                 names_to="utterance", values_to="response") %>%
-    rename(prob=utterance) %>% translate_probs_to_utts() %>% 
-    rename(`model.table`= response) %>% dplyr::select(-prob)
-    
-  # data.behav_model = left_join(
-  #   behav_model, model.tables,
-  #   by=c("table_id", "empirical_id", "utterance")
-  # )
+  ) %>% group_by(prolific_id, id, table_id)
+
   if(params$save) {
     save_data(behav_model,
               paste(params$target_dir, "model-behavioral-predictions.rds",

@@ -222,7 +222,7 @@ out.freq_time
 
 # remove all trials for these participants
 df.out = out.freq_time %>% dplyr::select(prolific_id) %>%
-  add_column(id=rep(list(TRIALS), nrow(df.out))) %>%
+  add_column(id=rep(list(TRIALS), nrow(out.freq_time))) %>%
   unnest(c(id)) %>% group_by(prolific_id)
 ```
 
