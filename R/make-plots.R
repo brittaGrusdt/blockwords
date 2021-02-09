@@ -71,16 +71,17 @@ ggsave(paste(DATA$plot_dir, "prior-vs-utt-per-proband.png", sep=fs), p, width=18
 
 
 # likelihoods 
-average_likelihoods = function(){
+average_likelihoods = function(tables_fn, dir_empiric){
   target_dir = here("model", "results", tables_fn)
   plot_dir = paste(target_dir, "plots", sep=fs)
-  if(!dir.exists(plot_dir)) {
-    dir.create(plot_dir)
+  if(!dir.exists(plot_dir)) {dir.create(plot_dir)
   }
   model.avg = readRDS(paste(target_dir, "model-avg-predictions.rds", sep=fs)) %>%
     filter(stimulus != "ind2") %>% dplyr::select(utterance, stimulus, p) %>%
-    mutate(utterance=factor(utterance, levels=levels.responses)) %>% 
-    pivot_wider(names_from="utterance", values_from="p", names_prefix="utt.")
+    mutate(utterance=factor(utterance, levels=levels.responses),
+           p=p+epsilon, N=sum(p), p.smooth=p/N) %>% dplyr::select(-N, -p) %>% 
+    pivot_wider(names_from="utterance", values_from="p.smooth", names_prefix="utt.",
+                names_sort=TRUE)
   
   behavioral = readRDS(paste(dir_empiric, "behavioral-avg-task2.rds", sep=fs)) %>%
     filter(id != "ind2") %>% mutate(utterance=factor(utterance, levels=levels.responses))
@@ -88,17 +89,24 @@ average_likelihoods = function(){
     pivot_wider(names_from="utterance", values_from="ratio", names_prefix="utt.")
   behav.counts = behavioral %>% dplyr::select(id, utterance, count) %>%
     mutate(utterance=factor(utterance, levels=levels.responses)) %>% 
-    pivot_wider(names_from="utterance", values_from="count", names_prefix="utt.")
+    pivot_wider(names_from="utterance", values_from="count",
+                names_prefix="utt.", names_sort=TRUE)
   
-  map_dfr(seq(1, nrow(behav.counts)), function(i){
+  likelihoods = map_dfr(seq(1, nrow(behav.counts)), function(i){
     id = behav.counts[i,]$id
     data = behav.counts[i,] %>% dplyr::select(-id) %>% as.matrix()
     probs = model.avg %>% filter(stimulus == (!! id)) %>%
       ungroup() %>% dplyr::select(-stimulus) %>% as.matrix()
-    p = dmultinom(data, prob=probs)
-    return(tibble(id=id, ll=p))
-  })
+    probs.best = data/(sum(data))
     
+    ll = dmultinom(data, prob=probs, log = TRUE)
+    ll.best = dmultinom(data, prob=probs.best, log=TRUE)
+    ll.random = dmultinom(data,
+                          prob=(rep(1, length(probs))/length(probs)),
+                          log=TRUE)
+    return(tibble(id=id, ll.random=ll.random, ll=ll, ll.best=ll.best))
+  })
+  return(likelihoods)
 }
 
 # Plots only relevant for non-filtered data -----------------------------------
@@ -161,3 +169,23 @@ if(!use_filtered && plot_single_participants) {
   if(!dir.exists(fn)){dir.create(fn, recursive = TRUE)}
   plotSliderRatingsAndUtts(DATA$joint.smooth, fn)
 }
+
+
+tables_fn = "tables-model-filtered-augmented"
+tables_fn = "tables-dirichlet-filtered-augmented"
+
+dir_empiric = here("data", "prolific", exp.name, "filtered_data")
+
+avg_likelihoods = average_likelihoods(tables_fn, dir_empiric) %>%
+  pivot_longer(cols=c(ll, ll.random, ll.best), names_to="key", values_to="val") %>% 
+  mutate(key=as_factor(key))
+
+p = avg_likelihoods %>%
+  ggplot(aes(x=val, y=id)) +
+  geom_point(aes(color=key))+
+  scale_y_discrete(name="stimulus") +
+  scale_x_continuous(name="average log likelihood")
+
+ggsave(here("model", "results", tables_fn, "plots",
+            "average-log-likelihood.png"), p, width=12)
+
