@@ -1,0 +1,261 @@
+stimulus,utterance,p,sd,predictor,best.utt,n.stim
+if1_hh,blue does not fall,0.0094959341747054,0.05838082197115348,model,FALSE,387
+if1_hh,if blue does not fall green does not fall,0.19263010650624354,0.35980505726724205,model,FALSE,387
+if1_hh,if blue does not fall green falls,0.0331099427860019,0.05099143370680737,model,FALSE,387
+if1_hh,green does not fall,0.0028273976214518446,0.027702445542082656,model,FALSE,387
+if1_hh,if green does not fall blue does not fall,0.059431524819914795,0.236736637533216,model,FALSE,387
+if1_hh,if green does not fall blue falls,0.054002427015488075,0.058166317793760136,model,FALSE,387
+if1_hh,neither block falls,0,0,model,FALSE,387
+if1_hh,blue falls but green does not fall,0.0037562782489177137,0.0368034877167788,model,FALSE,387
+if1_hh,blue falls,0.05615153275423494,0.05870361871966492,model,FALSE,387
+if1_hh,if blue falls green does not fall,0.0037540980495624925,0.03676375384711459,model,FALSE,387
+if1_hh,if blue falls green falls,0.05630041681859461,0.05885926975341627,model,FALSE,387
+if1_hh,green falls,0.05630044426398189,0.058859298450354154,model,FALSE,387
+if1_hh,if green falls blue does not fall,0.009580978221369246,0.058903671146036535,model,FALSE,387
+if1_hh,if green falls blue falls,0.05615153261828654,0.05870361857753772,model,FALSE,387
+if1_hh,green falls but blue does not fall,0,0,model,FALSE,387
+if1_hh,both blocks fall,0.05630044847978762,0.05885930286491068,model,FALSE,387
+if1_hh,blue might not fall,0.040352755182849795,0.18390162789502185,model,FALSE,387
+if1_hh,green might not fall,0.19755077023291248,0.3639617677557739,model,TRUE,387
+if1_hh,blue might fall,0.05615152852648218,0.05870361429976091,model,FALSE,387
+if1_hh,green might fall,0.05615188367921337,0.05870398559417615,model,FALSE,387
+if1_lh,blue does not fall,0.20862422385053148,0.1790355217417108,model,FALSE,435
+if1_lh,if blue does not fall green does not fall,0.005762841261102583,0.048785351826033815,model,FALSE,435
+if1_lh,if blue does not fall green falls,1.5855427296154128e-12,3.306911548474884e-11,model,FALSE,435
+if1_lh,green does not fall,1.6550014632197188e-4,1.6655388818260204e-4,model,FALSE,435
+if1_lh,if green does not fall blue does not fall,3.268615329034454e-9,3.4539708322324695e-9,model,FALSE,435
+if1_lh,if green does not fall blue falls,3.16271675743815e-12,4.658960342377315e-11,model,FALSE,435
+if1_lh,neither block falls,0.20404316278186774,0.17894075942591328,model,FALSE,435
+if1_lh,blue falls but green does not fall,0,0,model,FALSE,435
+if1_lh,blue falls,8.68391776287315e-12,6.572377767843809e-11,model,FALSE,435
+if1_lh,if blue falls green does not fall,2.103076074955005e-5,7.83995234612435e-5,model,FALSE,435
+if1_lh,if blue falls green falls,1.8456139160551064e-12,2.7187518482612176e-11,model,FALSE,435
+if1_lh,green falls,8.018522217533566e-22,3.12063014948609e-21,model,FALSE,435
+if1_lh,if green falls blue does not fall,0.020230869174188402,0.07366272142757112,model,FALSE,435
+if1_lh,if green falls blue falls,7.1030587608817685e-12,5.7052690268588474e-11,model,FALSE,435
+if1_lh,green falls but blue does not fall,0.20229885056803093,0.40217639807965233,model,FALSE,435
+if1_lh,both blocks fall,0,0,model,FALSE,435
+if1_lh,blue might not fall,0.3462255548430559,0.34109147385347305,model,TRUE,435
+if1_lh,green might not fall,0.012627963305789308,0.0955740801743906,model,FALSE,435
+if1_lh,blue might fall,8.68391711144404e-12,6.572377272965648e-11,model,FALSE,435
+if1_lh,green might fall,8.683972036237102e-12,6.572418842587588e-11,model,FALSE,435
+if1_u-Lh,blue does not fall,0.06575259994993823,0.14297295128592247,model,FALSE,407
+if1_u-Lh,if blue does not fall green does not fall,0.06364862325551764,0.17248754718169265,model,FALSE,407
+if1_u-Lh,if blue does not fall green falls,0.009229764285345672,0.031147937149763463,model,FALSE,407
+if1_u-Lh,green does not fall,8.492712672913142e-5,2.1308663485493262e-4,model,FALSE,407
+if1_u-Lh,if green does not fall blue does not fall,0.041732953301150975,0.20013413275896152,model,FALSE,407
+if1_u-Lh,if green does not fall blue falls,0.008898603012292916,0.03053266128487753,model,FALSE,407
+if1_u-Lh,neither block falls,0.059312391697669054,0.1351617253149215,model,FALSE,407
+if1_u-Lh,blue falls but green does not fall,0,0,model,FALSE,407
+if1_u-Lh,blue falls,0.009903702514941416,0.03242444581876572,model,FALSE,407
+if1_u-Lh,if blue falls green does not fall,2.0403275077702086e-5,1.5542384541532164e-4,model,FALSE,407
+if1_u-Lh,if blue falls green falls,0.009929961831671328,0.03251041831552025,model,FALSE,407
+if1_u-Lh,green falls,0.00992996666284259,0.032510434167951234,model,FALSE,407
+if1_u-Lh,if green falls blue does not fall,0.006414984748523953,0.05020041657995695,model,FALSE,407
+if1_u-Lh,if green falls blue falls,0.009903702490963543,0.032424445740262826,model,FALSE,407
+if1_u-Lh,green falls but blue does not fall,0.014742014741527872,0.12066674287210688,model,FALSE,407
+if1_u-Lh,both blocks fall,0.008391919485285402,0.029868786594826162,model,FALSE,407
+if1_u-Lh,blue might not fall,0.5563753758971777,0.46087562002036886,model,TRUE,407
+if1_u-Lh,green might not fall,0.10592063954489661,0.2549088794417815,model,FALSE,407
+if1_u-Lh,blue might fall,0.009903701769273444,0.03242444337746959,model,FALSE,407
+if1_u-Lh,green might fall,0.009903764409184071,0.03242464845878994,model,FALSE,407
+if1_uh,blue does not fall,0.011126703522542532,0.06099485099851252,model,FALSE,304
+if1_uh,if blue does not fall green does not fall,0.074263853870673,0.15992738856836058,model,FALSE,304
+if1_uh,if blue does not fall green falls,0.01139552123346187,0.03388183109733396,model,FALSE,304
+if1_uh,green does not fall,5.526788174927296e-6,3.648190276008228e-5,model,FALSE,304
+if1_uh,if green does not fall blue does not fall,0.03941977061062114,0.19477372747529073,model,FALSE,304
+if1_uh,if green does not fall blue falls,0.02122691858713032,0.045335846077101304,model,FALSE,304
+if1_uh,neither block falls,0.007505478291002193,0.04954308370681361,model,FALSE,304
+if1_uh,blue falls but green does not fall,0,0,model,FALSE,304
+if1_uh,blue falls,0.025464336098839194,0.049684989297766755,model,FALSE,304
+if1_uh,if blue falls green does not fall,0.006581997231674624,0.08097651332104959,model,FALSE,304
+if1_uh,if blue falls green falls,0.025531853944535325,0.049816727658281,model,FALSE,304
+if1_uh,green falls,0.025531866378566793,0.04981675195161788,model,FALSE,304
+if1_uh,if green falls blue does not fall,0.008261183574746433,0.05615265676407077,model,FALSE,304
+if1_uh,if green falls blue falls,0.025464336037187698,0.04968498917747484,model,FALSE,304
+if1_uh,green falls but blue does not fall,0,0,model,FALSE,304
+if1_uh,both blocks fall,0.024982654726827844,0.04916852789834397,model,FALSE,304
+if1_uh,blue might not fall,0.4632296326676681,0.49261430579970117,model,TRUE,304
+if1_uh,green might not fall,0.1790795370138517,0.3227060355325658,model,FALSE,304
+if1_uh,blue might fall,0.02546433418158233,0.049684985556892276,model,FALSE,304
+if1_uh,green might fall,0.025464495240917137,0.049685299809394026,model,FALSE,304
+if2_hl,blue does not fall,0,0,model,FALSE,1494
+if2_hl,if blue does not fall green does not fall,0.056643662377279774,0.22001249772482961,model,FALSE,1494
+if2_hl,if blue does not fall green falls,0.014089378002869576,0.037412736078458644,model,FALSE,1494
+if2_hl,green does not fall,0.006706768003159815,0.04281240954234654,model,FALSE,1494
+if2_hl,if green does not fall blue does not fall,0.33031508816115224,0.4701218073131746,model,TRUE,1494
+if2_hl,if green does not fall blue falls,0.016644704001720113,0.04045775650666632,model,FALSE,1494
+if2_hl,neither block falls,0,0,model,FALSE,1494
+if2_hl,blue falls but green does not fall,0.008515149005317905,0.05498746519909774,model,FALSE,1494
+if2_hl,blue falls,0.07157430545035248,0.06780501538571519,model,FALSE,1494
+if2_hl,if blue falls green does not fall,0.00889688296604883,0.05681690990133884,model,FALSE,1494
+if2_hl,if blue falls green falls,0.07176408262276011,0.06798479844016718,model,FALSE,1494
+if2_hl,green falls,0.07176411760742474,0.06798483158567806,model,FALSE,1494
+if2_hl,if green falls blue does not fall,0.0013351235306367857,0.03647844010682209,model,FALSE,1494
+if2_hl,if green falls blue falls,0.07157430527568279,0.06780501522301083,model,FALSE,1494
+if2_hl,green falls but blue does not fall,0,0,model,FALSE,1494
+if2_hl,both blocks fall,0.07156856875279487,0.06797658768043521,model,FALSE,1494
+if2_hl,blue might not fall,0.018053439105012312,0.13311861269421266,model,FALSE,1494
+if2_hl,green might not fall,0.037405372314817754,0.1769337668220864,model,FALSE,1494
+if2_hl,blue might fall,0.07157430006138978,0.06780501028054933,model,FALSE,1494
+if2_hl,green might fall,0.07157475276159013,0.06780543914037351,model,FALSE,1494
+if2_ll,blue does not fall,0.04516176702928317,0.12100566413251934,model,FALSE,359
+if2_ll,if blue does not fall green does not fall,0.03624978270078797,0.16395086508888226,model,FALSE,359
+if2_ll,if blue does not fall green falls,3.10031488459377e-4,0.005874258061293206,model,FALSE,359
+if2_ll,green does not fall,0.09324526786711423,0.1295453730191422,model,FALSE,359
+if2_ll,if green does not fall blue does not fall,0.005571032910145889,0.07453501913273844,model,FALSE,359
+if2_ll,if green does not fall blue falls,3.0921333127506345e-4,0.00585875551115265,model,FALSE,359
+if2_ll,neither block falls,0.04314533523168582,0.1186983126616261,model,FALSE,359
+if2_ll,blue falls but green does not fall,0.12358765250462879,0.17231361283604696,model,FALSE,359
+if2_ll,blue falls,3.091156883561739e-4,0.005856905320906616,model,FALSE,359
+if2_ll,if blue falls green does not fall,0.123639728155385,0.17199600768097395,model,FALSE,359
+if2_ll,if blue falls green falls,3.0993528859908555e-4,0.005872434736032609,model,FALSE,359
+if2_ll,green falls,3.0993543473871064e-4,0.005872437599212134,model,FALSE,359
+if2_ll,if green falls blue does not fall,0.09289925614186177,0.27851476986611967,model,FALSE,359
+if2_ll,if green falls blue falls,3.091156856922469e-4,0.0058569053068278235,model,FALSE,359
+if2_ll,green falls but blue does not fall,0,0,model,FALSE,359
+if2_ll,both blocks fall,3.099354560458404e-4,0.005872438039416498,model,FALSE,359
+if2_ll,blue might not fall,0.39475552904852135,0.4582795756210804,model,TRUE,359
+if2_ll,green might not fall,0.03895913275213405,0.17144231276414648,model,FALSE,359
+if2_ll,blue might fall,3.091156650822781e-4,0.005856904879929307,model,FALSE,359
+if2_ll,green might fall,3.0911762020755814e-4,0.005856941924259614,model,FALSE,359
+if2_u-Ll,blue does not fall,0.0493110445347605,0.12358632428112107,model,FALSE,391
+if2_u-Ll,if blue does not fall green does not fall,0.16362320942755149,0.33219589253185017,model,FALSE,391
+if2_u-Ll,if blue does not fall green falls,0.0031312387450268507,0.01842755449876156,model,FALSE,391
+if2_u-Ll,green does not fall,0.006527453553113766,0.06133841103616778,model,FALSE,391
+if2_u-Ll,if green does not fall blue does not fall,0.02298972764343094,0.14996857782052228,model,FALSE,391
+if2_u-Ll,if green does not fall blue falls,0.014623662787269884,0.039666107429795774,model,FALSE,391
+if2_u-Ll,neither block falls,0.04785076877901887,0.12068540347428641,model,FALSE,391
+if2_u-Ll,blue falls but green does not fall,0.003717850863164913,0.0366162215061032,model,FALSE,391
+if2_u-Ll,blue falls,0.014619044659964123,0.0396535809027775,model,FALSE,391
+if2_u-Ll,if blue falls green does not fall,0.007809948041629675,0.06847339326378526,model,FALSE,391
+if2_u-Ll,if blue falls green falls,0.014657806493234532,0.03975872127370988,model,FALSE,391
+if2_u-Ll,green falls,0.014657813634044673,0.03975874065869651,model,FALSE,391
+if2_u-Ll,if green falls blue does not fall,0.015806894171004247,0.08004745439061349,model,FALSE,391
+if2_u-Ll,if green falls blue falls,0.014619044624569819,0.03965358080677184,model,FALSE,391
+if2_u-Ll,green falls but blue does not fall,0,0,model,FALSE,391
+if2_u-Ll,both blocks fall,0.014657814732556874,0.039758743638367476,model,FALSE,391
+if2_u-Ll,blue might not fall,0.35235199608791684,0.4465338542315192,model,TRUE,391
+if2_u-Ll,green might not fall,0.20980650163923628,0.3733545275896594,model,FALSE,391
+if2_u-Ll,blue might fall,0.014619043559269308,0.03965357791718631,model,FALSE,391
+if2_u-Ll,green might fall,0.014619136023239242,0.03965382872205063,model,FALSE,391
+if2_ul,blue does not fall,0.07254379984173218,0.14590588559362858,model,FALSE,472
+if2_ul,if blue does not fall green does not fall,0.12486657656846284,0.27823988046466697,model,FALSE,472
+if2_ul,if blue does not fall green falls,0.004716156933589845,0.022444142012180184,model,FALSE,472
+if2_ul,green does not fall,0.039786648039136355,0.10748482259290258,model,FALSE,472
+if2_ul,if green does not fall blue does not fall,0.05925200783381266,0.23619793156360816,model,FALSE,472
+if2_ul,if green does not fall blue falls,0.008408675667570375,0.030268312938215275,model,FALSE,472
+if2_ul,neither block falls,0.07259383632316536,0.14600652296238273,model,FALSE,472
+if2_ul,blue falls but green does not fall,0.04388757526184457,0.11854650470500215,model,FALSE,472
+if2_ul,blue falls,0.009615298639369541,0.032660025988400315,model,FALSE,472
+if2_ul,if blue falls green does not fall,0.056275034020270336,0.15032443969293982,model,FALSE,472
+if2_ul,if blue falls green falls,0.009640793152334952,0.03274662315066877,model,FALSE,472
+if2_ul,green falls,0.009640797848141982,0.032746639116488764,model,FALSE,472
+if2_ul,if green falls blue does not fall,0.017191262807700263,0.09524858908671607,model,FALSE,472
+if2_ul,if green falls blue falls,0.0096152986160899,0.032660025909326984,model,FALSE,472
+if2_ul,green falls but blue does not fall,0,0,model,FALSE,472
+if2_ul,both blocks fall,0.009640798569809556,0.03274664157089734,model,FALSE,472
+if2_ul,blue might not fall,0.15958624836408986,0.29982827965878367,model,FALSE,472
+if2_ul,green might not fall,0.2735085348662712,0.40878366810610056,model,TRUE,472
+if2_ul,blue might fall,0.009615297915415887,0.03266002352936644,model,FALSE,472
+if2_ul,green might fall,0.009615358731201422,0.032660230100707656,model,FALSE,472
+independent_hh,blue does not fall,0.003366183641201094,0.0350361446180592,model,FALSE,655
+independent_hh,if blue does not fall green does not fall,0.04433461601891217,0.20584950005564628,model,FALSE,655
+independent_hh,if blue does not fall green falls,0.06429168903405881,0.059187866137544606,model,FALSE,655
+independent_hh,green does not fall,0,0,model,FALSE,655
+independent_hh,if green does not fall blue does not fall,0.1495585137555102,0.35682687727238915,model,TRUE,655
+independent_hh,if green does not fall blue falls,0.039151186159938865,0.05426803073255354,model,FALSE,655
+independent_hh,neither block falls,0,0,model,FALSE,655
+independent_hh,blue falls but green does not fall,0,0,model,FALSE,655
+independent_hh,blue falls,0.07415123769192442,0.05802837363498732,model,FALSE,655
+independent_hh,if blue falls green does not fall,1.0970092194953488e-6,1.983734955494542e-5,model,FALSE,655
+independent_hh,if blue falls green falls,0.07434784754743966,0.05818223418420107,model,FALSE,655
+independent_hh,green falls,0.07434788379334752,0.05818226254908275,model,FALSE,655
+independent_hh,if green falls blue does not fall,0.003396330636051239,0.035349922648004316,model,FALSE,655
+independent_hh,if green falls blue falls,0.07415123751239659,0.05802837349449462,model,FALSE,655
+independent_hh,green falls but blue does not fall,0.07938931297447731,0.27055203426456126,model,FALSE,655
+independent_hh,both blocks fall,0.07415674875225274,0.05822059783079823,model,FALSE,655
+independent_hh,blue might not fall,0.09552646470726871,0.29113732119951574,model,FALSE,655
+independent_hh,green might not fall,0.001526717549088998,0.039073233043031556,model,FALSE,655
+independent_hh,blue might fall,0.07415123210894024,0.058028369265923446,model,FALSE,655
+independent_hh,green might fall,0.07415170110797427,0.058028736289482734,model,FALSE,655
+independent_hl,blue does not fall,0.006843586694461404,0.04971285579128337,model,FALSE,698
+independent_hl,if blue does not fall green does not fall,0.0648702921987296,0.19045395201685048,model,FALSE,698
+independent_hl,if blue does not fall green falls,0.011958974754628931,0.03506679619136814,model,FALSE,698
+independent_hl,green does not fall,0.08652935455394747,0.12839992038436088,model,FALSE,698
+independent_hl,if green does not fall blue does not fall,0.05008616648210109,0.21814838596615974,model,FALSE,698
+independent_hl,if green does not fall blue falls,0.013359996497616947,0.03696267429791785,model,FALSE,698
+independent_hl,neither block falls,0,0,model,FALSE,698
+independent_hl,blue falls but green does not fall,0.11248729010888539,0.16810166276026023,model,FALSE,698
+independent_hl,blue falls,0.01621719951303697,0.04047637340298429,model,FALSE,698
+independent_hl,if blue falls green does not fall,0.12056905595831781,0.18281886254784915,model,FALSE,698
+independent_hl,if blue falls green falls,0.01626019878816682,0.040583695396544286,model,FALSE,698
+independent_hl,green falls,0.016260206715305037,0.040583715181822876,model,FALSE,698
+independent_hl,if green falls blue does not fall,0.028245892976820414,0.1461152838148017,model,FALSE,698
+independent_hl,if green falls blue falls,0.01621719946983268,0.040476373306568135,model,FALSE,698
+independent_hl,green falls but blue does not fall,0,0,model,FALSE,698
+independent_hl,both blocks fall,0.016260207933906735,0.04058371822332074,model,FALSE,698
+independent_hl,blue might not fall,0.0837202326033638,0.26727357843148813,model,FALSE,698
+independent_hl,green might not fall,0.30767964559471767,0.4346028364748917,model,TRUE,698
+independent_hl,blue might fall,0.01621719829201411,0.040476370355443485,model,FALSE,698
+independent_hl,green might fall,0.01621730086415089,0.040476626364386696,model,FALSE,698
+independent_ll,blue does not fall,0.23172018888920554,0.16416976514898968,model,FALSE,664
+independent_ll,if blue does not fall green does not fall,0.002516903691676571,0.032354584175344536,model,FALSE,664
+independent_ll,if blue does not fall green falls,5.420175220058553e-23,7.433435410156915e-22,model,FALSE,664
+independent_ll,green does not fall,0.01007137176553234,0.08719388238532148,model,FALSE,664
+independent_ll,if green does not fall blue does not fall,1.9751211526103203e-9,1.683199715108453e-9,model,FALSE,664
+independent_ll,if green does not fall blue falls,5.520506906774836e-12,5.5482276008395974e-11,model,FALSE,664
+independent_ll,neither block falls,0.1892648408401997,0.16826477161409018,model,FALSE,664
+independent_ll,blue falls but green does not fall,0,0,model,FALSE,664
+independent_ll,blue falls,5.5187635516737824e-12,5.5464754752147543e-11,model,FALSE,664
+independent_ll,if blue falls green does not fall,0.005224435138565067,0.05399891431055263,model,FALSE,664
+independent_ll,if blue falls green falls,1.1066085443612462e-21,2.267165356926995e-21,model,FALSE,664
+independent_ll,green falls,9.309679289446603e-23,1.0246595973697228e-21,model,FALSE,664
+independent_ll,if green falls blue does not fall,0.09960684418551097,0.14852811348012374,model,FALSE,664
+independent_ll,if green falls blue falls,5.5187635391517e-12,5.546475461777836e-11,model,FALSE,664
+independent_ll,green falls but blue does not fall,0.24246987951006385,0.42890007940536384,model,TRUE,664
+independent_ll,both blocks fall,0,0,model,FALSE,664
+independent_ll,blue might not fall,0.21110026870676515,0.20240948469496103,model,FALSE,664
+independent_ll,green might not fall,0.008025265269764126,0.08065563339167504,model,FALSE,664
+independent_ll,blue might fall,5.5187631366338236e-12,5.5464750576056815e-11,model,FALSE,664
+independent_ll,green might fall,5.5187979940643174e-12,5.5465101389788274e-11,model,FALSE,664
+independent_uh,blue does not fall,0.014555059235105675,0.08234495191852938,model,FALSE,312
+independent_uh,if blue does not fall green does not fall,4.672750868731265e-11,4.003456313056084e-10,model,FALSE,312
+independent_uh,if blue does not fall green falls,0.012395884926408625,0.03617031546891904,model,FALSE,312
+independent_uh,green does not fall,0.003596644926237902,0.030814848127518172,model,FALSE,312
+independent_uh,if green does not fall blue does not fall,0.006410258420948617,0.07993525271949399,model,FALSE,312
+independent_uh,if green does not fall blue falls,0.007160429824090886,0.02741468593967585,model,FALSE,312
+independent_uh,neither block falls,0,0,model,FALSE,312
+independent_uh,blue falls but green does not fall,0.004659229751061445,0.04095025321293092,model,FALSE,312
+independent_uh,blue falls,0.012759494021296464,0.03661455299112386,model,FALSE,312
+independent_uh,if blue falls green does not fall,0.007981692674422811,0.06961846944729945,model,FALSE,312
+independent_uh,if blue falls green falls,0.012793325407535737,0.036711635430823106,model,FALSE,312
+independent_uh,green falls,0.012793331642301132,0.03671165332917564,model,FALSE,312
+independent_uh,if green falls blue does not fall,0.024032241516022002,0.10958269782496205,model,FALSE,312
+independent_uh,if green falls blue falls,0.012759493990404512,0.036614552902476546,model,FALSE,312
+independent_uh,green falls but blue does not fall,0.10897435897075998,0.3121076149681834,model,FALSE,312
+independent_uh,both blocks fall,0.012793332601081953,0.036711656080486245,model,FALSE,312
+independent_uh,blue might not fall,0.6567135912725682,0.46054706003127804,model,TRUE,312
+independent_uh,green might not fall,0.06410256394930555,0.24532902350919103,model,FALSE,312
+independent_uh,blue might fall,0.012759493060610616,0.0366145502343466,model,FALSE,312
+independent_uh,green might fall,0.012759573763112004,0.03661478181766869,model,FALSE,312
+independent_ul,blue does not fall,0.02833193934712821,0.10137971305375833,model,FALSE,320
+independent_ul,if blue does not fall green does not fall,0.06562500029670416,0.24801326378661348,model,FALSE,320
+independent_ul,if blue does not fall green falls,0.009043779291318384,0.03116822223290713,model,FALSE,320
+independent_ul,green does not fall,0.09483334143296912,0.13259092503265127,model,FALSE,320
+independent_ul,if green does not fall blue does not fall,0.037500000554748274,0.19028109866552506,model,FALSE,320
+independent_ul,if green does not fall blue falls,0.009410256686801318,0.03174951288386311,model,FALSE,320
+independent_ul,neither block falls,0.015506170731674429,0.07297612185567419,model,FALSE,320
+independent_ul,blue falls but green does not fall,0.12043728122891265,0.17127788753945145,model,FALSE,320
+independent_ul,blue falls,0.012528734734309557,0.03722256356450431,model,FALSE,320
+independent_ul,if blue falls green does not fall,0.12585000983232397,0.17596393321156273,model,FALSE,320
+independent_ul,if blue falls green falls,0.012561954265734147,0.03732125812719761,model,FALSE,320
+independent_ul,green falls,0.012561960389911872,0.03732127632197943,model,FALSE,320
+independent_ul,if green falls blue does not fall,0.08719698724298816,0.2534489920086774,model,FALSE,320
+independent_ul,if green falls blue falls,0.01252873469967811,0.037222563475835496,model,FALSE,320
+independent_ul,green falls but blue does not fall,0.046874999998451905,0.21170212555780288,model,FALSE,320
+independent_ul,both blocks fall,0.009432033810598294,0.03269322617897776,model,FALSE,320
+independent_ul,blue might not fall,0.2090942671752881,0.37766150441819984,model,TRUE,320
+independent_ul,green might not fall,0.06562500145549412,0.24801326420054076,model,FALSE,320
+independent_ul,blue might fall,0.012528733790997965,0.03722256076194876,model,FALSE,320
+independent_ul,green might fall,0.012528813033970378,0.03722279619087592,model,FALSE,320

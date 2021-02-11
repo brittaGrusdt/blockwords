@@ -1,0 +1,14 @@
+stimulus_id,p.val,n
+independent_ll,1,100
+independent_uh,1,100
+if1_lh,0.99,100
+independent_ul,0.97,100
+independent_hh,0.89,100
+independent_hl,0.89,100
+if1_hh,0.78,100
+if2_ll,0.66,100
+if2_u-Ll,0.66,100
+if2_hl,0.47,100
+if1_uh,0.43,100
+if2_ul,0.38,100
+if1_u-Lh,0.37,100
