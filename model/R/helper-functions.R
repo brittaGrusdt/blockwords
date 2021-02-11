@@ -1,5 +1,9 @@
-epsilon = 0.00001
+library(here)
 save_data <- function(data, target_path){
+  target_dir = paste(head(str_split(target_path, .Platform$file.sep)[[1]],
+                          -1), collapse="/")
+  if(!dir.exists(target_dir)){dir.create(target_dir, recursive=TRUE)
+  }
   data %>% write_rds(target_path)
   print(paste("saved to:", target_path))
 }
@@ -282,14 +286,14 @@ adapt_bn_ids <- function(data_wide){
 #@arg config_keys: order in config_keys is important since same key values
 # are overwritten!
 configure <- function(config_keys) {
-  key <- config_keys[[1]]
-  params <- config::get(file = here("model", "config.yml"), config=key)
-  for(key in config_keys[-1]){
-    params2 <- config::get(file = here("model", "config.yml"), config=key)
-    for (name in names(params2)) {
-      params[name] = params2[name]
-    }
+  config_file = yaml::yaml.load_file(here("model", "config.yml"), eval.expr=TRUE)
+  params = c() 
+  # latest read config key is added first, as the first added key does not 
+  # get overwritten by later ones, therefore default in the end
+  for(key in rev(config_keys)){
+    params = c(params, config_file[[key]])
   }
+  params = c(params, config_file$default)
   return(params)
 }
 
